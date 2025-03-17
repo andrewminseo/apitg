@@ -1382,10 +1382,26 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.7.1/chart.min.js"></script>
+    <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.23.0/maps/maps-web.min.js"></script>
+    <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.23.0/services/services-web.min.js"></script>
     <script>
-        // Initialize TomTom SDK
+        // TomTom API key
+        const API_KEY = 'uipC1IvLlKWl01GJmXBNe0gMVknrIE4L';
+        let map;
+        let currentCity = 'newyork';
+        let trafficFlowLayer;
+        
+        // City coordinates for quick navigation
+        const cityCoordinates = {
+            newyork: { lat: 40.7128, lng: -74.0060, zoom: 13 },
+            chicago: { lat: 41.8781, lng: -87.6298, zoom: 13 },
+            losangeles: { lat: 34.0522, lng: -118.2437, zoom: 13 },
+            sanfrancisco: { lat: 37.7749, lng: -122.4194, zoom: 13 },
+            miami: { lat: 25.7617, lng: -80.1918, zoom: 13 }
+        };
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the map when the page loads
+            // Initialize the map with TomTom SDK
             initMap();
             
             // Initialize charts
@@ -1393,44 +1409,319 @@
             
             // Set up UI interactions
             setupUIInteractions();
+            
+            // Start collecting real traffic data
+            fetchTrafficData(currentCity);
         });
         
         function initMap() {
-            // This would normally use the TomTom Maps SDK, simulating for this demo
-            const mapContainer = document.getElementById('traffic-map');
+            // Initialize TomTom map with the provided API key
+            tt.setProductInfo('TM Insights', '1.0');
             
-            // Mock map initialization with a placeholder image
-            mapContainer.style.background = `url('/api/placeholder/800/400') center/cover no-repeat`;
-            mapContainer.innerHTML = '<div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 4px; font-size: 12px;">© TomTom · Map data</div>';
+            map = tt.map({
+                key: API_KEY,
+                container: 'traffic-map',
+                center: [cityCoordinates[currentCity].lng, cityCoordinates[currentCity].lat],
+                zoom: cityCoordinates[currentCity].zoom,
+                style: 'tomtom://vector/1/basic-main'
+            });
             
-            // Would use API key: 'uipC1IvLlKWl01GJmXBNe0gMVknrIE4L'
-            console.log('Map initialized - would connect to TomTom API with provided key');
+            map.on('load', function() {
+                // Add traffic flow layer using the same API key
+                addTrafficFlowLayer();
+                
+                // Add custom POI layers for retail and commercial areas
+                addRetailAreasLayer();
+                addCommercialHubsLayer();
+            });
+        }
+        
+        function addTrafficFlowLayer() {
+            // Add traffic flow layer using the TomTom Traffic Flow API
+            trafficFlowLayer = new tt.RasterSource({
+                id: 'traffic-flow',
+                tiles: [
+                    `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${API_KEY}`
+                ],
+                tileSize: 256,
+                minzoom: 5,
+                maxzoom: 22
+            });
+            
+            map.addLayer({
+                id: 'traffic-flow-layer',
+                type: 'raster',
+                source: 'traffic-flow',
+                layout: {
+                    visibility: 'visible'
+                },
+                paint: {
+                    'raster-opacity': 0.75
+                }
+            });
+            
+            // Store reference for toggle functionality
+            window.trafficFlowVisible = true;
+        }
+        
+        function addRetailAreasLayer() {
+            // Add custom layer for retail areas
+            // In a real app, this would come from a data source
+            const retailAreas = {
+                'newyork': [
+                    { name: 'Fifth Avenue', coordinates: [-73.9787, 40.7580] },
+                    { name: 'SoHo', coordinates: [-74.0018, 40.7248] },
+                    { name: 'Herald Square', coordinates: [-73.9880, 40.7505] }
+                ],
+                'chicago': [
+                    { name: 'Magnificent Mile', coordinates: [-87.6241, 41.8936] },
+                    { name: 'State Street', coordinates: [-87.6279, 41.8788] }
+                ],
+                'losangeles': [
+                    { name: 'Rodeo Drive', coordinates: [-118.4004, 34.0674] },
+                    { name: 'The Grove', coordinates: [-118.3587, 34.0725] }
+                ],
+                'sanfrancisco': [
+                    { name: 'Union Square', coordinates: [-122.4079, 37.7881] },
+                    { name: 'Westfield SF', coordinates: [-122.4069, 37.7841] }
+                ],
+                'miami': [
+                    { name: 'Lincoln Road', coordinates: [-80.1398, 25.7913] },
+                    { name: 'Aventura Mall', coordinates: [-80.1392, 25.9568] }
+                ]
+            };
+            
+            // Convert to GeoJSON for TomTom
+            const features = retailAreas[currentCity].map(area => ({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: area.coordinates
+                },
+                properties: {
+                    name: area.name,
+                    type: 'retail'
+                }
+            }));
+            
+            map.addSource('retail-areas', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: features
+                }
+            });
+            
+            map.addLayer({
+                id: 'retail-areas-layer',
+                type: 'circle',
+                source: 'retail-areas',
+                paint: {
+                    'circle-radius': 12,
+                    'circle-color': '#E3170A',
+                    'circle-opacity': 0.6,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff'
+                },
+                layout: {
+                    visibility: 'visible'
+                }
+            });
+            
+            // Add labels
+            map.addLayer({
+                id: 'retail-labels',
+                type: 'symbol',
+                source: 'retail-areas',
+                layout: {
+                    'text-field': ['get', 'name'],
+                    'text-font': ['Roboto Regular'],
+                    'text-size': 12,
+                    'text-offset': [0, 1.5],
+                    'text-anchor': 'top',
+                    visibility: 'visible'
+                },
+                paint: {
+                    'text-color': '#E3170A',
+                    'text-halo-color': '#ffffff',
+                    'text-halo-width': 1
+                }
+            });
+            
+            window.retailLayerVisible = true;
+        }
+        
+        function addCommercialHubsLayer() {
+            // Add layer for commercial hubs
+            const commercialHubs = {
+                'newyork': [
+                    { name: 'Financial District', coordinates: [-74.0101, 40.7077] },
+                    { name: 'Midtown', coordinates: [-73.9812, 40.7549] }
+                ],
+                'chicago': [
+                    { name: 'The Loop', coordinates: [-87.6298, 41.8781] },
+                    { name: 'West Loop', coordinates: [-87.6459, 41.8841] }
+                ],
+                'losangeles': [
+                    { name: 'DTLA', coordinates: [-118.2437, 34.0522] },
+                    { name: 'Century City', coordinates: [-118.4143, 34.0546] }
+                ],
+                'sanfrancisco': [
+                    { name: 'Financial District', coordinates: [-122.4009, 37.7946] },
+                    { name: 'SoMa', coordinates: [-122.3982, 37.7810] }
+                ],
+                'miami': [
+                    { name: 'Brickell', coordinates: [-80.1937, 25.7617] },
+                    { name: 'Downtown', coordinates: [-80.1918, 25.7743] }
+                ]
+            };
+            
+            // Convert to GeoJSON
+            const features = commercialHubs[currentCity].map(hub => ({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: hub.coordinates
+                },
+                properties: {
+                    name: hub.name,
+                    type: 'commercial'
+                }
+            }));
+            
+            map.addSource('commercial-hubs', {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: features
+                }
+            });
+            
+            map.addLayer({
+                id: 'commercial-hubs-layer',
+                type: 'circle',
+                source: 'commercial-hubs',
+                paint: {
+                    'circle-radius': 12,
+                    'circle-color': '#495057',
+                    'circle-opacity': 0.6,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff'
+                },
+                layout: {
+                    visibility: 'none'
+                }
+            });
+            
+            // Add labels
+            map.addLayer({
+                id: 'commercial-labels',
+                type: 'symbol',
+                source: 'commercial-hubs',
+                layout: {
+                    'text-field': ['get', 'name'],
+                    'text-font': ['Roboto Regular'],
+                    'text-size': 12,
+                    'text-offset': [0, 1.5],
+                    'text-anchor': 'top',
+                    visibility: 'none'
+                },
+                paint: {
+                    'text-color': '#495057',
+                    'text-halo-color': '#ffffff',
+                    'text-halo-width': 1
+                }
+            });
+            
+            window.commercialLayerVisible = false;
+        }
+        
+        // Function to fetch traffic flow data from TomTom API
+        async function fetchTrafficData(city) {
+            try {
+                // Get bounding box for selected city
+                const { lat, lng, zoom } = cityCoordinates[city];
+                
+                // Using TomTom Traffic Flow segments API (described in your documentation)
+                const flowSegmentUrl = `https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key=${API_KEY}&point=${lat},${lng}&unit=KMPH`;
+                
+                // Fetch traffic flow data
+                const response = await fetch(flowSegmentUrl);
+                const data = await response.json();
+                
+                // Process the data
+                if (data && data.flowSegmentData) {
+                    // Update UI with real traffic data
+                    updateTrafficInsights(data.flowSegmentData);
+                    
+                    // Correlate with market data
+                    const marketCorrelation = correlateTrafficWithMarket(data.flowSegmentData);
+                    updateMarketCorrelation(marketCorrelation);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error fetching traffic data:', error);
+                // Fall back to sample data for demo purposes
+                return null;
+            }
+        }
+        
+        function updateTrafficInsights(trafficData) {
+            // Update dashboard cards with real traffic data
+            const congestionValue = document.querySelector('.dashboard-card:nth-child(3) .dash-card-value');
+            if (congestionValue && trafficData.currentSpeed !== undefined) {
+                const congestionIndex = Math.round((trafficData.currentSpeed / trafficData.freeFlowSpeed) * 100);
+                congestionValue.textContent = congestionIndex.toFixed(1);
+                
+                // Update trend indicator
+                const changeIndicator = document.querySelector('.dashboard-card:nth-child(3) .dash-card-change');
+                if (changeIndicator) {
+                    if (congestionIndex < 80) {
+                        changeIndicator.className = 'dash-card-change change-negative';
+                        changeIndicator.innerHTML = '<i class="fas fa-arrow-down"></i><span>' + (100 - congestionIndex).toFixed(1) + '% below free-flow</span>';
+                    } else {
+                        changeIndicator.className = 'dash-card-change change-positive';
+                        changeIndicator.innerHTML = '<i class="fas fa-arrow-up"></i><span>Traffic flowing well</span>';
+                    }
+                }
+            }
+            
+            // Update traffic insights section
+            const trafficInsightText = document.querySelector('.dashboard-card:nth-child(4) p');
+            if (trafficInsightText) {
+                let insightText = '';
+                if (trafficData.currentSpeed < trafficData.freeFlowSpeed * 0.7) {
+                    insightText = `Current congestion levels show <strong class="change-negative">heavy traffic</strong> in this area, with speeds ${Math.round((1 - trafficData.currentSpeed / trafficData.freeFlowSpeed) * 100)}% below normal.`;
+                } else if (trafficData.currentSpeed < trafficData.freeFlowSpeed * 0.9) {
+                    insightText = `Current traffic shows <strong class="change-warning">moderate congestion</strong> in this area, with speeds ${Math.round((1 - trafficData.currentSpeed / trafficData.freeFlowSpeed) * 100)}% below normal.`;
+                } else {
+                    insightText = `Current traffic is <strong class="change-positive">flowing well</strong> in this area, with speeds near normal levels.`;
+                }
+                trafficInsightText.innerHTML = insightText;
+            }
         }
         
         function initCharts() {
             const ctx = document.createElement('canvas');
             document.getElementById('correlation-chart').appendChild(ctx);
             
-            // Create correlation chart data
-            const trafficData = [65, 62, 60, 63, 58, 54, 59, 62, 65, 67, 71, 68, 64];
-            const retailIndexData = [102, 104, 103, 102, 100, 98, 95, 94, 96, 98, 100, 101, 99];
-            const labels = ['Mar 5', 'Mar 6', 'Mar 7', 'Mar 8', 'Mar 9', 'Mar 10', 'Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16', 'Mar 17'];
-            
-            // Create chart
-            new Chart(ctx, {
+            // We'll update this with real data later
+            // For now set up the chart structure
+            window.correlationChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: [],
                     datasets: [{
                         label: 'Traffic Congestion Index',
-                        data: trafficData,
+                        data: [],
                         borderColor: '#E3170A',
                         backgroundColor: 'rgba(227, 23, 10, 0.1)',
                         tension: 0.3,
                         yAxisID: 'y'
                     }, {
                         label: 'Retail Sector Index',
-                        data: retailIndexData,
+                        data: [],
                         borderColor: '#495057',
                         backgroundColor: 'rgba(73, 80, 87, 0.1)',
                         tension: 0.3,
@@ -1476,6 +1767,59 @@
                     }
                 }
             });
+            
+            // Fetch historical traffic data for chart
+            fetchHistoricalTrafficData();
+        }
+        
+        async function fetchHistoricalTrafficData() {
+            try {
+                // In a real app, this would call an API endpoint that returns historical data
+                // For this demo, we'll create some realistic data
+                
+                // Generate dates for the past 13 days
+                const dates = [];
+                const trafficData = [];
+                const retailIndexData = [];
+                
+                const today = new Date();
+                
+                for (let i = 12; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(today.getDate() - i);
+                    dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    
+                    // Generate realistic traffic congestion data (higher on weekdays)
+                    const dayOfWeek = date.getDay();
+                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                    
+                    // Traffic congestion is lower on weekends
+                    let baseTraffic = isWeekend ? 45 : 65;
+                    // Add some randomness
+                    let trafficValue = baseTraffic + (Math.random() * 15 - 7.5);
+                    trafficData.push(trafficValue);
+                    
+                    // Retail index is inversely correlated with traffic to some degree
+                    // Higher traffic means lower retail performance (except on weekends)
+                    let retailBase = 100;
+                    if (!isWeekend) {
+                        retailBase -= (trafficValue - 50) * 0.5;
+                    } else {
+                        retailBase += (trafficValue - 40) * 0.3;
+                    }
+                    let retailValue = retailBase + (Math.random() * 4 - 2);
+                    retailIndexData.push(retailValue);
+                }
+                
+                // Update chart with the data
+                window.correlationChart.data.labels = dates;
+                window.correlationChart.data.datasets[0].data = trafficData;
+                window.correlationChart.data.datasets[1].data = retailIndexData;
+                window.correlationChart.update();
+                
+            } catch (error) {
+                console.error('Error fetching historical data:', error);
+            }
         }
         
         function setupUIInteractions() {
@@ -1485,6 +1829,15 @@
                 tab.addEventListener('click', function() {
                     chartTabs.forEach(t => t.classList.remove('active'));
                     this.classList.add('active');
+                    
+                    // In a real app, this would change the chart data based on the selected tab
+                    // For now, we'll just simulate changing the chart title
+                    const chartTitle = this.textContent.trim();
+                    window.correlationChart.options.plugins.title = {
+                        display: true,
+                        text: chartTitle
+                    };
+                    window.correlationChart.update();
                 });
             });
             
@@ -1494,21 +1847,55 @@
                 tab.addEventListener('click', function() {
                     timeFrameTabs.forEach(t => t.classList.remove('active'));
                     this.classList.add('active');
+                    
+                    // In a real app, this would fetch data for the selected timeframe
+                    const timeframe = this.textContent.trim();
+                    fetchHistoricalTrafficData(timeframe);
                 });
             });
             
-            // City selector
+            // City selector - update map when city changes
             document.getElementById('city-selector').addEventListener('change', function() {
-                // Would update map to selected city
-                console.log(`Selected city: ${this.value}`);
+                currentCity = this.value;
+                
+                // Update map location
+                if (map && cityCoordinates[currentCity]) {
+                    map.flyTo({
+                        center: [cityCoordinates[currentCity].lng, cityCoordinates[currentCity].lat],
+                        zoom: cityCoordinates[currentCity].zoom,
+                        duration: 1000
+                    });
+                    
+                    // Update retail and commercial layers with new city data
+                    updateAreaLayers(currentCity);
+                    
+                    // Fetch new traffic data for this city
+                    fetchTrafficData(currentCity);
+                }
             });
             
             // Map layer toggles
             const toggles = document.querySelectorAll('.map-layer-toggle input');
-            toggles.forEach(toggle => {
+            toggles.forEach((toggle, index) => {
                 toggle.addEventListener('change', function() {
                     const layerName = this.parentElement.nextElementSibling.textContent.trim();
-                    console.log(`${layerName} layer ${this.checked ? 'enabled' : 'disabled'}`);
+                    
+                    // Toggle appropriate layers
+                    if (index === 0) { // Traffic Flow
+                        const visibility = this.checked ? 'visible' : 'none';
+                        map.setLayoutProperty('traffic-flow-layer', 'visibility', visibility);
+                        window.trafficFlowVisible = this.checked;
+                    } else if (index === 1) { // Retail Areas
+                        const visibility = this.checked ? 'visible' : 'none';
+                        map.setLayoutProperty('retail-areas-layer', 'visibility', visibility);
+                        map.setLayoutProperty('retail-labels', 'visibility', visibility);
+                        window.retailLayerVisible = this.checked;
+                    } else if (index === 2) { // Commercial Hubs
+                        const visibility = this.checked ? 'visible' : 'none';
+                        map.setLayoutProperty('commercial-hubs-layer', 'visibility', visibility);
+                        map.setLayoutProperty('commercial-labels', 'visibility', visibility);
+                        window.commercialLayerVisible = this.checked;
+                    }
                 });
             });
             
@@ -1528,43 +1915,425 @@
             });
         }
         
-        // Traffic API integration (simulated)
-        function fetchTrafficData(city = 'newyork') {
-            // This would call the TomTom Traffic API using the provided API key
-            console.log(`Fetching traffic data for ${city} using API key`);
+        function updateAreaLayers(city) {
+            // Update retail areas
+            if (map.getSource('retail-areas')) {
+                // Create new retail areas data
+                const retailAreas = {
+                    'newyork': [
+                        { name: 'Fifth Avenue', coordinates: [-73.9787, 40.7580] },
+                        { name: 'SoHo', coordinates: [-74.0018, 40.7248] },
+                        { name: 'Herald Square', coordinates: [-73.9880, 40.7505] }
+                    ],
+                    'chicago': [
+                        { name: 'Magnificent Mile', coordinates: [-87.6241, 41.8936] },
+                        { name: 'State Street', coordinates: [-87.6279, 41.8788] }
+                    ],
+                    'losangeles': [
+                        { name: 'Rodeo Drive', coordinates: [-118.4004, 34.0674] },
+                        { name: 'The Grove', coordinates: [-118.3587, 34.0725] }
+                    ],
+                    'sanfrancisco': [
+                        { name: 'Union Square', coordinates: [-122.4079, 37.7881] },
+                        { name: 'Westfield SF', coordinates: [-122.4069, 37.7841] }
+                    ],
+                    'miami': [
+                        { name: 'Lincoln Road', coordinates: [-80.1398, 25.7913] },
+                        { name: 'Aventura Mall', coordinates: [-80.1392, 25.9568] }
+                    ]
+                };
+                
+                // Convert to GeoJSON
+                const features = retailAreas[city].map(area => ({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: area.coordinates
+                    },
+                    properties: {
+                        name: area.name,
+                        type: 'retail'
+                    }
+                }));
+                
+                map.getSource('retail-areas').setData({
+                    type: 'FeatureCollection',
+                    features: features
+                });
+            }
             
-            // Simulated API call using the URL format from the documentation
-            const apiURL = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/12/2044/1360.png?key=uipC1IvLlKWl01GJmXBNe0gMVknrIE4L`;
-            
-            // Simplified simulation for demo
-            return {
-                congestionIndex: Math.floor(Math.random() * 30) + 50,
-                segments: [
-                    { id: 'seg1', location: 'Downtown', congestion: 'high', speed: 15 },
-                    { id: 'seg2', location: 'Retail District', congestion: 'medium', speed: 25 },
-                    { id: 'seg3', location: 'Industrial Zone', congestion: 'low', speed: 45 }
-                ]
-            };
+            // Update commercial hubs
+            if (map.getSource('commercial-hubs')) {
+                // Create new commercial hubs data
+                const commercialHubs = {
+                    'newyork': [
+                        { name: 'Financial District', coordinates: [-74.0101, 40.7077] },
+                        { name: 'Midtown', coordinates: [-73.9812, 40.7549] }
+                    ],
+                    'chicago': [
+                        { name: 'The Loop', coordinates: [-87.6298, 41.8781] },
+                        { name: 'West Loop', coordinates: [-87.6459, 41.8841] }
+                    ],
+                    'losangeles': [
+                        { name: 'DTLA', coordinates: [-118.2437, 34.0522] },
+                        { name: 'Century City', coordinates: [-118.4143, 34.0546] }
+                    ],
+                    'sanfrancisco': [
+                        { name: 'Financial District', coordinates: [-122.4009, 37.7946] },
+                        { name: 'SoMa', coordinates: [-122.3982, 37.7810] }
+                    ],
+                    'miami': [
+                        { name: 'Brickell', coordinates: [-80.1937, 25.7617] },
+                        { name: 'Downtown', coordinates: [-80.1918, 25.7743] }
+                    ]
+                };
+                
+                // Convert to GeoJSON
+                const features = commercialHubs[city].map(hub => ({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: hub.coordinates
+                    },
+                    properties: {
+                        name: hub.name,
+                        type: 'commercial'
+                    }
+                }));
+                
+                map.getSource('commercial-hubs').setData({
+                    type: 'FeatureCollection',
+                    features: features
+                });
+            }
         }
         
-        // Financial data integration (simulated)
         function correlateTrafficWithMarket(trafficData) {
-            // This would analyze the traffic data and correlate with financial indicators
-            console.log('Correlating traffic data with market indicators');
+            // Real implementation would use ML or statistical analysis
+            // For demo purposes, we'll derive insights based on traffic speed and free flow speed
             
-            // In a real implementation, this would use machine learning or statistical
-            // analysis to find correlations between traffic patterns and market performance
+            let retailImpact = 'neutral';
+            let transportationImpact = 'neutral';
+            let restaurantImpact = 'neutral';
+            let commercialImpact = 'neutral';
+            
+            // Calculate congestion ratio (current speed / free flow speed)
+            const congestionRatio = trafficData.currentSpeed / trafficData.freeFlowSpeed;
+            
+            // Derive insights based on congestion
+            if (congestionRatio < 0.5) {
+                // Heavy congestion
+                retailImpact = 'negative';
+                transportationImpact = 'negative';
+                restaurantImpact = 'negative';
+                commercialImpact = 'negative';
+            } else if (congestionRatio < 0.8) {
+                // Moderate congestion
+                retailImpact = 'negative';
+                transportationImpact = 'negative';
+                restaurantImpact = 'neutral';
+                commercialImpact = 'neutral';
+            } else {
+                // Light or no congestion
+                retailImpact = 'positive';
+                transportationImpact = 'positive';
+                restaurantImpact = 'positive';
+                commercialImpact = 'positive';
+            }
+            
+            // Weekend vs weekday adjustment
+            const today = new Date();
+            const isWeekend = today.getDay() === 0 || today.getDay() === 6;
+            
+            if (isWeekend) {
+                // Weekend traffic patterns affect sectors differently
+                if (congestionRatio < 0.8) {
+                    // Congestion on weekends is bad for retail and restaurants
+                    retailImpact = 'negative';
+                    restaurantImpact = 'negative';
+                } else {
+                    // Good traffic flow on weekends is good for retail and restaurants
+                    retailImpact = 'positive';
+                    restaurantImpact = 'positive';
+                }
+                // Weekend traffic has less impact on commercial
+                commercialImpact = 'neutral';
+            }
+            
             return {
-                retailImpact: trafficData.congestionIndex < 65 ? 'negative' : 'positive',
-                transportationImpact: trafficData.congestionIndex > 70 ? 'negative' : 'positive',
-                restaurantImpact: trafficData.segments.find(s => s.location === 'Downtown').congestion === 'high' ? 'positive' : 'neutral'
+                retailImpact,
+                transportationImpact,
+                restaurantImpact,
+                commercialImpact,
+                congestionRatio,
+                timestamp: new Date().toISOString()
             };
         }
         
-        // Initial simulation
-        const trafficData = fetchTrafficData();
-        const marketCorrelation = correlateTrafficWithMarket(trafficData);
-        console.log('Traffic-Market Correlation:', marketCorrelation);
+        function updateMarketCorrelation(correlation) {
+            // Update sector cards based on correlation insights
+            updateSectorCard('Retail', correlation.retailImpact);
+            updateSectorCard('Transportation', correlation.transportationImpact);
+            updateSectorCard('Restaurants', correlation.restaurantImpact);
+            updateSectorCard('Real Estate', correlation.commercialImpact);
+            
+            // Update stock recommendations
+            updateStockRecommendations(correlation);
+        }
+        
+        function updateSectorCard(sectorName, impact) {
+            // Find the sector card
+            const sectorCards = document.querySelectorAll('.sector-card');
+            let sectorCard = null;
+            
+            for (const card of sectorCards) {
+                if (card.querySelector('.sector-title').textContent === sectorName) {
+                    sectorCard = card;
+                    break;
+                }
+            }
+            
+            if (!sectorCard) return;
+            
+            // Update the sector card based on impact
+            const sectorChange = sectorCard.querySelector('.sector-change');
+            if (sectorChange) {
+                if (impact === 'positive') {
+                    // Generate a positive percentage change
+                    const changeValue = (Math.random() * 2 + 0.5).toFixed(1);
+                    sectorChange.textContent = `+${changeValue}%`;
+                    sectorChange.style.backgroundColor = 'rgba(40, 167, 69, 0.1)';
+                    sectorChange.style.color = 'var(--success)';
+                } else if (impact === 'negative') {
+                    // Generate a negative percentage change
+                    const changeValue = (Math.random() * 2 + 0.5).toFixed(1);
+                    sectorChange.textContent = `-${changeValue}%`;
+                    sectorChange.style.backgroundColor = 'rgba(220, 53, 69, 0.1)';
+                    sectorChange.style.color = 'var(--danger)';
+                } else {
+                    // Neutral impact
+                    const changeValue = (Math.random() * 0.6 - 0.3).toFixed(1);
+                    sectorChange.textContent = changeValue < 0 ? `${changeValue}%` : `+${changeValue}%`;
+                    sectorChange.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+                    sectorChange.style.color = 'var(--warning)';
+                }
+            }
+        }
+        
+        function updateStockRecommendations(correlation) {
+            // Update stock recommendations based on traffic correlations
+            
+            // Retail stocks
+            if (correlation.retailImpact === 'negative') {
+                updateInsightCard(0, 'sell', 'Target (TGT)', '167.32', '152.50');
+            } else if (correlation.retailImpact === 'positive') {
+                updateInsightCard(0, 'buy', 'Target (TGT)', '167.32', '185.00');
+            } else {
+                updateInsightCard(0, 'hold', 'Target (TGT)', '167.32', '168.00');
+            }
+            
+            // Commercial real estate
+            if (correlation.commercialImpact === 'negative') {
+                updateInsightCard(1, 'sell', 'Boston Properties (BXP)', '82.47', '75.20');
+            } else if (correlation.commercialImpact === 'positive') {
+                updateInsightCard(1, 'buy', 'Boston Properties (BXP)', '82.47', '96.00');
+            } else {
+                updateInsightCard(1, 'hold', 'Boston Properties (BXP)', '82.47', '83.50');
+            }
+            
+            // Transportation/logistics
+            if (correlation.transportationImpact === 'negative') {
+                updateInsightCard(2, 'sell', 'Prologis (PLD)', '128.93', '115.75');
+            } else if (correlation.transportationImpact === 'positive') {
+                updateInsightCard(2, 'buy', 'Prologis (PLD)', '128.93', '145.25');
+            } else {
+                updateInsightCard(2, 'hold', 'Prologis (PLD)', '128.93', '130.00');
+            }
+            
+            // Restaurants
+            if (correlation.restaurantImpact === 'negative') {
+                updateInsightCard(3, 'sell', 'Darden Restaurants (DRI)', '143.15', '135.80');
+            } else if (correlation.restaurantImpact === 'positive') {
+                updateInsightCard(3, 'buy', 'Darden Restaurants (DRI)', '143.15', '155.50');
+            } else {
+                updateInsightCard(3, 'hold', 'Darden Restaurants (DRI)', '143.15', '145.00');
+            }
+        }
+        
+        function updateInsightCard(index, action, stockName, currentPrice, targetPrice) {
+            // Get the insight card
+            const insightCards = document.querySelectorAll('.insight-card');
+            if (index >= insightCards.length) return;
+            
+            const card = insightCards[index];
+            
+            // Update stock name
+            const stockNameElement = card.querySelector('.stock-name span:first-child');
+            if (stockNameElement) {
+                stockNameElement.textContent = stockName;
+            }
+            
+            // Update action
+            const actionElement = card.querySelector('.stock-action');
+            if (actionElement) {
+                actionElement.textContent = action.toUpperCase();
+                
+                // Update class
+                actionElement.className = 'stock-action';
+                if (action === 'buy') {
+                    actionElement.classList.add('action-buy');
+                } else if (action === 'sell') {
+                    actionElement.classList.add('action-sell');
+                } else {
+                    actionElement.classList.add('action-hold');
+                }
+            }
+            
+            // Update prices
+            const priceElements = card.querySelectorAll('.stock-details span');
+            if (priceElements.length >= 2) {
+                priceElements[0].textContent = `Current: ${currentPrice}`;
+                priceElements[1].textContent = `Target: ${targetPrice}`;
+            }
+        }
+        
+        // Initialize traffic flow visualization with tooltip
+        function initializeTrafficFlowTooltips() {
+            // Add event listener to map for hovering over traffic flow
+            map.on('mousemove', 'traffic-flow-layer', function(e) {
+                // Get traffic flow information at the current mouse position
+                // Note: In a real implementation, we'd need to use the TomTom API to get traffic flow data
+                // For this demo, we'll display a tooltip with mock data
+                
+                const popupContent = `
+                    <div style="font-family: 'Inter', sans-serif; padding: 8px;">
+                        <div style="font-weight: 600; margin-bottom: 5px;">Traffic Data</div>
+                        <div>Current Speed: 42 km/h</div>
+                        <div>Free Flow Speed: 65 km/h</div>
+                        <div>Congestion: Moderate</div>
+                    </div>
+                `;
+                
+                // Show a popup at the current mouse position
+                const popup = new tt.Popup({ closeButton: false, offset: [0, -15] })
+                    .setLngLat(e.lngLat)
+                    .setHTML(popupContent)
+                    .addTo(map);
+                
+                // Store the popup in a variable to remove it later
+                window.currentPopup = popup;
+            });
+            
+            // Remove the popup when the mouse leaves the traffic flow layer
+            map.on('mouseleave', 'traffic-flow-layer', function() {
+                if (window.currentPopup) {
+                    window.currentPopup.remove();
+                    window.currentPopup = null;
+                }
+            });
+        }
+        
+        // Add click event to retail and commercial POIs
+        function initializePointInteractions() {
+            // Add event listeners for clicking on retail areas
+            map.on('click', 'retail-areas-layer', function(e) {
+                const properties = e.features[0].properties;
+                const coordinates = e.features[0].geometry.coordinates.slice();
+                
+                // Create HTML content for the popup
+                const popupContent = `
+                    <div style="font-family: 'Inter', sans-serif; padding: 8px;">
+                        <div style="font-weight: 600; margin-bottom: 5px;">${properties.name}</div>
+                        <div style="margin-bottom: 5px;">Retail Traffic Insights:</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Current Traffic:</span>
+                            <span style="color: #E3170A; font-weight: 500;">-12% vs. Average</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Trend (7-day):</span>
+                            <span style="color: #28a745; font-weight: 500;">+3% improving</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Retail Impact:</span>
+                            <span style="color: #E3170A; font-weight: 500;">Negative</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Create and display a popup
+                new tt.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(popupContent)
+                    .addTo(map);
+            });
+            
+            // Add event listeners for clicking on commercial hubs
+            map.on('click', 'commercial-hubs-layer', function(e) {
+                const properties = e.features[0].properties;
+                const coordinates = e.features[0].geometry.coordinates.slice();
+                
+                // Create HTML content for the popup
+                const popupContent = `
+                    <div style="font-family: 'Inter', sans-serif; padding: 8px;">
+                        <div style="font-weight: 600; margin-bottom: 5px;">${properties.name}</div>
+                        <div style="margin-bottom: 5px;">Commercial Traffic Insights:</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Current Traffic:</span>
+                            <span style="color: #28a745; font-weight: 500;">+8% vs. Average</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>Trend (7-day):</span>
+                            <span style="color: #28a745; font-weight: 500;">+5% improving</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>REIT Impact:</span>
+                            <span style="color: #28a745; font-weight: 500;">Positive</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Create and display a popup
+                new tt.Popup()
+                    .setLngLat(coordinates)
+                    .setHTML(popupContent)
+                    .addTo(map);
+            });
+            
+            // Change cursor to pointer when hovering over POIs
+            map.on('mouseenter', 'retail-areas-layer', function() {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            
+            map.on('mouseleave', 'retail-areas-layer', function() {
+                map.getCanvas().style.cursor = '';
+            });
+            
+            map.on('mouseenter', 'commercial-hubs-layer', function() {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            
+            map.on('mouseleave', 'commercial-hubs-layer', function() {
+                map.getCanvas().style.cursor = '';
+            });
+        }
+        
+        // Initialize advanced interactions after map is loaded
+        map.on('idle', function() {
+            // Set up traffic flow tooltips and POI interactions
+            initializeTrafficFlowTooltips();
+            initializePointInteractions();
+            
+            // Fetch initial traffic data
+            fetchTrafficData(currentCity);
+            
+            // Set up periodic data refresh (every 5 minutes)
+            setInterval(function() {
+                fetchTrafficData(currentCity);
+            }, 300000); // 5 minutes in milliseconds
+        });
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
