@@ -1,673 +1,1570 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ann Arbor Bus Tracker</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    :root {
-      --ann-arbor-green: #465436;
-      --ann-arbor-teal: #4a746a;
-      --ann-arbor-brick: #a13c2e;
-      --ann-arbor-gold: #d6bb7a;
-      --ann-arbor-tan: #e6e2d3;
-      --light-gray: #f2f2f2;
-      --dark-gray: #333;
-      --white: #ffffff;
-    }
-    
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      height: 100%;
-    }
-    
-    header {
-      background-color: var(--ann-arbor-green);
-      color: white;
-      padding: 1rem;
-    }
-    
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .refresh-btn {
-      background-color: var(--ann-arbor-brick);
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .main-container {
-      display: flex;
-      height: calc(100vh - 76px);
-    }
-    
-    .sidebar {
-      width: 300px;
-      background-color: var(--white);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .map-container {
-      flex: 1;
-    }
-    
-    #map {
-      height: 100%;
-      width: 100%;
-    }
-    
-    .tab-container {
-      display: flex;
-      border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .tab {
-      flex: 1;
-      padding: 1rem;
-      text-align: center;
-      cursor: pointer;
-      background-color: var(--white);
-    }
-    
-    .tab.active {
-      background-color: var(--ann-arbor-teal);
-      color: var(--white);
-    }
-    
-    .tab-content {
-      display: none;
-      padding: 1rem;
-      flex: 1;
-      overflow-y: auto;
-    }
-    
-    .tab-content.active {
-      display: block;
-    }
-    
-    .search-container {
-      margin-bottom: 1rem;
-    }
-    
-    .search-input {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-    }
-    
-    .route-list, .stop-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .route-item, .stop-item {
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      background-color: #f0f0f0;
-      border-radius: 4px;
-      cursor: pointer;
-      border-left: 4px solid transparent;
-    }
-    
-    .route-item.active, .stop-item.active {
-      border-left-color: var(--ann-arbor-gold);
-      background-color: var(--ann-arbor-tan);
-    }
-    
-    .route-color {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-    }
-    
-    .status-indicator {
-      float: right;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      color: white;
-    }
-    
-    .status-active {
-      background-color: #28a745;
-    }
-    
-    .status-inactive {
-      background-color: #6c757d;
-    }
-    
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 1rem;
-    }
-    
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-radius: 50%;
-      border-top: 4px solid var(--ann-arbor-teal);
-      width: 24px;
-      height: 24px;
-      margin-right: 1rem;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .error-message {
-      background-color: #dc3545;
-      color: white;
-      padding: 0.75rem;
-      margin: 1rem;
-      border-radius: 4px;
-      text-align: center;
-    }
-    
-    .refresh-status {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background-color: rgba(255, 255, 255, 0.8);
-      padding: 5px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      z-index: 1000;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TM Insights | Traffic-Based Market Intelligence</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E3170A;
+            --primary-dark: #C41408;
+            --primary-light: #FF3B2F;
+            --primary-ghost: rgba(227, 23, 10, 0.05);
+            --white: #FFFFFF;
+            --off-white: #F8F9FA;
+            --light-gray: #E9ECEF;
+            --mid-gray: #CED4DA;
+            --dark-gray: #495057;
+            --black: #212529;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.05);
+            
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            
+            --transition: all 0.2s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--black);
+            background-color: var(--off-white);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+            background: none;
+        }
+        
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 70px 1fr;
+            grid-template-areas:
+                "sidebar header"
+                "sidebar main";
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            grid-area: header;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .search-container {
+            position: relative;
+            width: 360px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 42px;
+            border-radius: 24px;
+            border: 1px solid var(--mid-gray);
+            background-color: var(--off-white);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(227, 23, 10, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dark-gray);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .notification-bell {
+            position: relative;
+            color: var(--dark-gray);
+            font-size: 1.2rem;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 16px;
+            height: 16px;
+            background-color: var(--primary);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            grid-area: sidebar;
+            background-color: var(--white);
+            border-right: 1px solid var(--light-gray);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 24px;
+            margin-bottom: 40px;
+        }
+        
+        .logo-icon {
+            color: var(--primary);
+            font-size: 1.6rem;
+        }
+        
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+        
+        .logo-text span {
+            color: var(--primary);
+        }
+        
+        .nav-section {
+            margin-bottom: 24px;
+        }
+        
+        .nav-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--dark-gray);
+            padding: 0 24px;
+            margin-bottom: 12px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: var(--dark-gray);
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background-color: var(--primary-ghost);
+            color: var(--primary);
+        }
+        
+        .nav-item.active {
+            color: var(--primary);
+            background-color: var(--primary-ghost);
+            font-weight: 500;
+        }
+        
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: var(--primary);
+        }
+        
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        /* Main Content */
+        .main-content {
+            grid-area: main;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .see-all {
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto auto 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .dashboard-card {
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .dash-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .dash-card-title {
+            font-size: 0.9rem;
+            color: var(--dark-gray);
+        }
+        
+        .dash-card-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--primary-ghost);
+            color: var(--primary);
+        }
+        
+        .dash-card-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .dash-card-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .change-positive {
+            color: var(--success);
+        }
+        
+        .change-negative {
+            color: var(--danger);
+        }
+        
+        /* Chart cards */
+        .chart-card {
+            grid-column: span 2;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .chart-tabs {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-tab {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: var(--transition);
+            color: var(--dark-gray);
+        }
+        
+        .chart-tab:hover {
+            background-color: var(--light-gray);
+        }
+        
+        .chart-tab.active {
+            background-color: var(--primary-ghost);
+            color: var(--primary);
+        }
+        
+        .chart-timeframe {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .map-container {
+            grid-column: span 3;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .map-layer-toggle {
+            background-color: var(--white);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .map-layer-toggle input {
+            margin: 0;
+        }
+
+        #traffic-map {
+            width: 100%;
+            height: 100%;
+            border-radius: var(--radius-md);
+        }
+        
+        /* Traffic insights */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .insight-card {
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .insight-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .insight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .insight-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .insight-content {
+            flex: 1;
+        }
+        
+        .stock-recommendation {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: var(--light-gray);
+            border-radius: var(--radius-sm);
+        }
+        
+        .stock-name {
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .stock-action {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .action-buy {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+        
+        .action-sell {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+        }
+        
+        .action-hold {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--warning);
+        }
+        
+        .stock-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--dark-gray);
+        }
+        
+        /* News section */
+        .news-section {
+            margin-bottom: 24px;
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .news-card {
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+        
+        .news-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .news-image {
+            width: 100%;
+            height: 160px;
+            background-color: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--mid-gray);
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .news-content {
+            padding: 16px;
+        }
+        
+        .news-source {
+            font-size: 0.75rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .news-date {
+            color: var(--dark-gray);
+        }
+        
+        .news-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .news-summary {
+            font-size: 0.85rem;
+            color: var(--dark-gray);
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .news-tags {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .news-tag {
+            padding: 4px 8px;
+            border-radius: 12px;
+            background-color: var(--light-gray);
+            font-size: 0.75rem;
+            color: var(--dark-gray);
+        }
+        
+        /* Traffic alerts */
+        .traffic-alerts {
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 24px;
+        }
+        
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .alert-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .alert-high {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+        }
+        
+        .alert-medium {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--warning);
+        }
+        
+        .alert-low {
+            background-color: rgba(23, 162, 184, 0.1);
+            color: var(--info);
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .alert-description {
+            font-size: 0.85rem;
+            color: var(--dark-gray);
+        }
+        
+        .alert-time {
+            font-size: 0.75rem;
+            color: var(--dark-gray);
+            white-space: nowrap;
+        }
+        
+        /* Market sectors */
+        .market-sectors {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        
+        .sector-card {
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+        
+        .sector-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .sector-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .sector-change {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .sector-stocks {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .sector-stock {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        
+        .stock-ticker {
+            font-weight: 500;
+        }
+        
+        .stock-percentage {
+            font-weight: 500;
+        }
+        
+        /* Custom toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--mid-gray);
+            transition: var(--transition);
+            border-radius: 20px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--white);
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        
+        /* Tooltips */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--black);
+            color: var(--white);
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+        
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--black) transparent transparent transparent;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid,
+            .insights-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .chart-card {
+                grid-column: span 2;
+            }
+            
+            .map-container {
+                grid-column: span 2;
+            }
+            
+            .market-sectors,
+            .news-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "main";
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .dashboard-grid,
+            .insights-grid,
+            .market-sectors,
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-card {
+                grid-column: span 1;
+            }
+            
+            .map-container {
+                grid-column: span 1;
+            }
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--light-gray);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--mid-gray);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--dark-gray);
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <div class="logo">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="4" fill="#465436"/>
-          <path d="M8 12C8 10.8954 8.89543 10 10 10H30C31.1046 10 32 10.8954 32 12V28C32 29.1046 31.1046 30 30 30H10C8.89543 30 8 29.1046 8 28V12Z" fill="#4a746a"/>
-          <path d="M12 18C12 16.8954 12.8954 16 14 16H26C27.1046 16 28 16.8954 28 18V28H12V18Z" fill="#d6bb7a"/>
-        </svg>
-        <h1>Ann Arbor Bus Tracker</h1>
-      </div>
-      <button id="refresh-btn" class="refresh-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-          <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-        </svg>
-        Refresh
-      </button>
-    </div>
-  </header>
-  
-  <div class="main-container">
-    <div class="sidebar">
-      <div class="tab-container">
-        <div class="tab active" data-tab="routes">Routes</div>
-        <div class="tab" data-tab="stops">Stops</div>
-      </div>
-      
-      <div id="announcements"></div>
-      
-      <div id="error-container"></div>
-      
-      <div id="routes-tab" class="tab-content active">
-        <div class="search-container">
-          <input type="text" class="search-input" id="route-search" placeholder="Search routes...">
-        </div>
-        <div id="routes-list-container">
-          <div class="loading-container">
-            <div class="spinner"></div>
-            <span>Loading routes...</span>
-          </div>
-        </div>
-      </div>
-      
-      <div id="stops-tab" class="tab-content">
-        <div class="search-container">
-          <input type="text" class="search-input" id="stop-search" placeholder="Search stops...">
-        </div>
-        <div id="stops-list-container">
-          <div class="loading-container">
-            <div class="spinner"></div>
-            <span>Loading stops...</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="map-container">
-      <div id="map"></div>
-    </div>
-  </div>
-
-  <script>
-    // API Configuration
-    const apiBase = 'http://mbus.pts.umich.edu/api/v0';
-    const apiKey = 'XXcFMTXidWRLjqVR9Aw8p4sXr';
-    
-    // Initialize variables
-    let map;
-    let busMarkers = {};
-    let routePolylines = {};
-    let selectedRoute = null;
-    let routes = [];
-    let stops = [];
-    let busRefreshInterval;
-    
-    // Initialize the application
-    document.addEventListener('DOMContentLoaded', function() {
-      initMap();
-      setupTabs();
-      setupRefreshButton();
-      setupSearch();
-      
-      // Load initial data
-      loadData();
-      
-      // Set up auto-refresh
-      busRefreshInterval = setInterval(function() {
-        loadBuses();
-      }, 30000); // Refresh every 30 seconds
-    });
-
-    // Initialize the map
-    function initMap() {
-      map = L.map('map').setView([42.2808, -83.7430], 15); // Centered on Ann Arbor
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-      
-      L.control.scale().addTo(map);
-    }
-
-    // Set up tab functionality
-    function setupTabs() {
-      const tabs = document.querySelectorAll('.tab');
-      const tabContents = document.querySelectorAll('.tab-content');
-      
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          // Remove active class from all tabs and contents
-          tabs.forEach(t => t.classList.remove('active'));
-          tabContents.forEach(c => c.classList.remove('active'));
-          
-          // Add active class to clicked tab and corresponding content
-          tab.classList.add('active');
-          document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-        });
-      });
-    }
-
-    // Set up refresh button
-    function setupRefreshButton() {
-      document.getElementById('refresh-btn').addEventListener('click', () => {
-        const button = document.getElementById('refresh-btn');
-        const originalText = button.innerHTML;
-        button.innerHTML = '<div class="spinner" style="width: 16px; height: 16px;"></div> Refreshing...';
-        button.disabled = true;
-        
-        // Reload data
-        Promise.all([loadRoutes(), loadStops(), loadBuses()])
-          .finally(() => {
-            button.innerHTML = originalText;
-            button.disabled = false;
-          });
-      });
-    }
-
-    // Set up search functionality
-    function setupSearch() {
-      document.getElementById('route-search').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        
-        const routeItems = document.querySelectorAll('.route-item');
-        routeItems.forEach(item => {
-          const routeName = item.textContent.toLowerCase();
-          item.style.display = routeName.includes(searchTerm) ? 'block' : 'none';
-        });
-      });
-      
-      document.getElementById('stop-search').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        
-        const stopItems = document.querySelectorAll('.stop-item');
-        stopItems.forEach(item => {
-          const stopName = item.textContent.toLowerCase();
-          item.style.display = stopName.includes(searchTerm) ? 'block' : 'none';
-        });
-      });
-    }
-
-    // Load all data
-    async function loadData() {
-      try {
-        await Promise.all([
-          loadRoutes(),
-          loadStops()
-        ]);
-        
-        await loadBuses();
-      } catch (error) {
-        console.error('Error loading data:', error);
-        showError('Failed to load data. Please try again later.');
-      }
-    }
-
-    // Fetch data from API
-    async function fetchData(endpoint) {
-      try {
-        console.log(`Fetching data from: ${apiBase}/${endpoint}`);
-        const response = await fetch(`${apiBase}/${endpoint}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error(`Error fetching ${endpoint}:`, error);
-        throw error;
-      }
-    }
-
-    // Load routes from the API
-    async function loadRoutes() {
-      try {
-        const data = await fetchData('routes/');
-        console.log('Routes data:', data);
-        
-        routes = data.response || [];
-        renderRoutes();
-        return routes;
-      } catch (error) {
-        console.error('Error loading routes:', error);
-        showError('Failed to load routes. Please try again later.');
-        return [];
-      }
-    }
-
-    // Load stops from the API
-    async function loadStops() {
-      try {
-        const data = await fetchData('stops/');
-        console.log('Stops data:', data);
-        
-        stops = data.response || [];
-        renderStops();
-        return stops;
-      } catch (error) {
-        console.error('Error loading stops:', error);
-        showError('Failed to load stops. Please try again later.');
-        return [];
-      }
-    }
-
-    // Load buses from the API
-    async function loadBuses() {
-      try {
-        const data = await fetchData('buses/');
-        console.log('Buses data:', data);
-        
-        const buses = data.response || [];
-        updateBusMarkers(buses);
-        
-        if (selectedRoute) {
-          drawRouteLine(selectedRoute);
-        }
-        
-        return buses;
-      } catch (error) {
-        console.error('Error loading buses:', error);
-        showError('Failed to load bus data. Please try again later.');
-        return [];
-      }
-    }
-
-    // Render routes in the UI
-    function renderRoutes() {
-      const container = document.getElementById('routes-list-container');
-      
-      if (routes.length > 0) {
-        // Sort routes: active first, then by name
-        const sortedRoutes = [...routes].sort((a, b) => {
-          if (a.is_active !== b.is_active) {
-            return b.is_active - a.is_active; // Active routes first
-          }
-          return a.name.localeCompare(b.name);
-        });
-        
-        const routeList = document.createElement('ul');
-        routeList.className = 'route-list';
-        
-        sortedRoutes.forEach(route => {
-          const routeItem = document.createElement('li');
-          routeItem.className = `route-item ${selectedRoute === route.id ? 'active' : ''}`;
-          routeItem.dataset.id = route.id;
-          
-          const statusClass = route.is_active ? 'status-active' : 'status-inactive';
-          const statusText = route.is_active ? 'Active' : 'Inactive';
-          
-          routeItem.innerHTML = `
-            <span class="route-color" style="background-color: ${route.color}"></span>
-            ${route.name}
-            <span class="status-indicator ${statusClass}">${statusText}</span>
-          `;
-          
-          routeItem.addEventListener('click', () => {
-            selectRoute(route.id);
-          });
-          
-          routeList.appendChild(routeItem);
-        });
-        
-        container.innerHTML = '';
-        container.appendChild(routeList);
-      } else {
-        container.innerHTML = '<p>No routes available</p>';
-      }
-    }
-
-    // Render stops in the UI
-    function renderStops() {
-      const container = document.getElementById('stops-list-container');
-      
-      if (stops.length > 0) {
-        // Sort stops by name
-        const sortedStops = [...stops].sort((a, b) => {
-          return a.human_name.localeCompare(b.human_name);
-        });
-        
-        const stopList = document.createElement('ul');
-        stopList.className = 'stop-list';
-        
-        sortedStops.forEach(stop => {
-          const stopItem = document.createElement('li');
-          stopItem.className = 'stop-item';
-          stopItem.dataset.id = stop.id;
-          
-          stopItem.innerHTML = `
-            ${stop.human_name} - ${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}
-          `;
-          
-          stopItem.addEventListener('click', () => {
-            // Center map on stop
-            const lat = parseFloat(stop.latitude);
-            const lng = parseFloat(stop.longitude);
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="logo-text">TM <span>Insights</span></div>
+            </div>
             
-            if (!isNaN(lat) && !isNaN(lng)) {
-              map.setView([lat, lng], 17);
-              
-              // Create marker
-              L.marker([lat, lng])
-                .addTo(map)
-                .bindPopup(`<b>${stop.human_name}</b><br>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}`)
-                .openPopup();
-            }
-          });
-          
-          stopList.appendChild(stopItem);
+            <div class="nav-section">
+                <div class="nav-title">Main</div>
+                <a href="#" class="nav-item active">
+                    <div class="nav-icon"><i class="fas fa-home"></i></div>
+                    <div>Dashboard</div>
+                </a>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-signal"></i></div>
+                    <div>Market Analysis</div>
+                </a>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-traffic-light"></i></div>
+                    <div>Traffic Insights</div>
+                </a>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-newspaper"></i></div>
+                    <div>News Feed</div>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Portfolio</div>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-briefcase"></i></div>
+                    <div>Investments</div>
+                </a>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-history"></i></div>
+                    <div>Transaction History</div>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Reports</div>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-file-alt"></i></div>
+                    <div>Analytics</div>
+                </a>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-download"></i></div>
+                    <div>Export Data</div>
+                </a>
+            </div>
+            
+            <div class="nav-section" style="margin-top: auto;">
+                <div class="nav-title">Settings</div>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-cog"></i></div>
+                    <div>Preferences</div>
+                </a>
+                <a href="#" class="nav-item">
+                    <div class="nav-icon"><i class="fas fa-question-circle"></i></div>
+                    <div>Help & Support</div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Header -->
+        <div class="header">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" placeholder="Search for stocks, sectors, or insights...">
+            </div>
+            
+            <div class="user-menu">
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <div class="notification-badge">3</div>
+                </div>
+                
+                <div class="user-profile">
+                    <div class="avatar">TM</div>
+                    <div>Trader</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1 style="margin-bottom: 24px; font-size: 1.5rem;">Traffic-Based Market Intelligence Dashboard</h1>
+            
+            <!-- Dashboard Cards -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="dash-card-header">
+                        <div class="dash-card-title">S&P 500</div>
+                        <div class="dash-card-icon"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                    <div class="dash-card-value">4,892.31</div>
+                    <div class="dash-card-change change-positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>1.23% Today</span>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="dash-card-header">
+                        <div class="dash-card-title">Nasdaq</div>
+                        <div class="dash-card-icon"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                    <div class="dash-card-value">15,673.45</div>
+                    <div class="dash-card-change change-positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>0.87% Today</span>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="dash-card-header">
+                        <div class="dash-card-title">Traffic Congestion Index</div>
+                        <div class="dash-card-icon"><i class="fas fa-car"></i></div>
+                    </div>
+                    <div class="dash-card-value">64.2</div>
+                    <div class="dash-card-change change-negative">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>2.3% vs Last Week</span>
+                    </div>
+                </div>
+                
+                <div class="chart-card dashboard-card">
+                    <div class="chart-toolbar">
+                        <div class="chart-tabs">
+                            <button class="chart-tab active">Traffic Correlation</button>
+                            <button class="chart-tab">Market Performance</button>
+                            <button class="chart-tab">Trend Analysis</button>
+                        </div>
+                        <div class="chart-timeframe">
+                            <button class="chart-tab">1D</button>
+                            <button class="chart-tab active">1W</button>
+                            <button class="chart-tab">1M</button>
+                            <button class="chart-tab">3M</button>
+                            <button class="chart-tab">1Y</button>
+                        </div>
+                    </div>
+                    <div id="correlation-chart" style="width: 100%; height: 300px;"></div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="dash-card-header">
+                        <div class="dash-card-title">Traffic Insights</div>
+                        <div class="dash-card-icon"><i class="fas fa-lightbulb"></i></div>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--dark-gray);">
+                        <p>Current congestion levels show <strong class="change-negative">decreased traffic</strong> in major retail areas, potentially indicating reduced consumer activity.</p>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                            <i class="fas fa-exclamation-circle" style="color: var(--primary);"></i>
+                            <span style="font-weight: 500; color: var(--primary);">Signal detected: Retail sector pressure</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Traffic Map -->
+                <div class="map-container dashboard-card">
+                    <div class="dash-card-header">
+                        <div class="dash-card-title">Live Traffic Flow Analysis</div>
+                        <div>
+                            <select id="city-selector" class="search-input" style="width: auto; padding: 6px 12px;">
+                                <option value="newyork">New York</option>
+                                <option value="chicago">Chicago</option>
+                                <option value="losangeles">Los Angeles</option>
+                                <option value="sanfrancisco">San Francisco</option>
+                                <option value="miami">Miami</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="traffic-map"></div>
+                    <div class="map-overlay">
+                        <div class="map-layer-toggle">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Traffic Flow</span>
+                        </div>
+                        <div class="map-layer-toggle">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Retail Areas</span>
+                        </div>
+                        <div class="map-layer-toggle">
+                            <label class="switch">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Commercial Hubs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Insights Section -->
+            <div class="section-title">
+                <h2>Traffic-Based Market Insights</h2>
+                <a href="#" class="see-all">View All Insights</a>
+            </div>
+            
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-title">Retail Traffic Insight</div>
+                        <i class="fas fa-store" style="color: var(--primary);"></i>
+                    </div>
+                    <div class="insight-content">
+                        <p>Major shopping districts showing 17% less traffic compared to last month, correlating with recent retail earnings warnings.</p>
+                    </div>
+                    <div class="stock-recommendation">
+                        <div class="stock-name">
+                            <span>Target (TGT)</span>
+                            <span class="stock-action action-sell">SELL</span>
+                        </div>
+                        <div class="stock-details">
+                            <span>Current: $167.32</span>
+                            <span>Target: $152.50</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-title">Commercial District Activity</div>
+                        <i class="fas fa-building" style="color: var(--primary);"></i>
+                    </div>
+                    <div class="insight-content">
+                        <p>Financial district traffic has increased 8% week-over-week, indicating stronger office occupancy and potential gains for office REITs.</p>
+                    </div>
+                    <div class="stock-recommendation">
+                        <div class="stock-name">
+                            <span>Boston Properties (BXP)</span>
+                            <span class="stock-action action-buy">BUY</span>
+                        </div>
+                        <div class="stock-details">
+                            <span>Current: $82.47</span>
+                            <span>Target: $96.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-title">Logistics Hub Analysis</div>
+                        <i class="fas fa-truck" style="color: var(--primary);"></i>
+                    </div>
+                    <div class="insight-content">
+                        <p>Warehouse district traffic up 22% vs. last year, with consistent flow indicating strong e-commerce and supply chain activity.</p>
+                    </div>
+                    <div class="stock-recommendation">
+                        <div class="stock-name">
+                            <span>Prologis (PLD)</span>
+                            <span class="stock-action action-buy">BUY</span>
+                        </div>
+                        <div class="stock-details">
+                            <span>Current: $128.93</span>
+                            <span>Target: $145.25</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <div class="insight-title">Restaurant Traffic Trend</div>
+                        <i class="fas fa-utensils" style="color: var(--primary);"></i>
+                    </div>
+                    <div class="insight-content">
+                        <p>Restaurant district traffic remains flat week-over-week but shows decline in evening hours, suggesting pressure on higher-end dining.</p>
+                    </div>
+                    <div class="stock-recommendation">
+                        <div class="stock-name">
+                            <span>Darden Restaurants (DRI)</span>
+                            <span class="stock-action action-hold">HOLD</span>
+                        </div>
+                        <div class="stock-details">
+                            <span>Current: $143.15</span>
+                            <span>Target: $145.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Traffic Alerts -->
+            <div class="section-title">
+                <h2>Traffic Alerts & Anomalies</h2>
+                <a href="#" class="see-all">View All Alerts</a>
+            </div>
+            
+            <div class="traffic-alerts">
+                <div class="alerts-list">
+                    <div class="alert-item">
+                        <div class="alert-icon alert-high">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">Major Traffic Drop in Tech Corridor</div>
+                            <div class="alert-description">Sudden 35% reduction in Silicon Valley traffic over past 48 hours may indicate tech layoffs or remote work policy changes.</div>
+                        </div>
+                        <div class="alert-time">2h ago</div>
+                    </div>
+                    
+                    <div class="alert-item">
+                        <div class="alert-icon alert-medium">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">Increased Airport Traffic</div>
+                            <div class="alert-description">All major airports showing 15% higher traffic volume compared to last month, positive signal for airline and travel stocks.</div>
+                        </div>
+                        <div class="alert-time">5h ago</div>
+                    </div>
+                    
+                    <div class="alert-item">
+                        <div class="alert-icon alert-low">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">Shopping Mall Traffic Pattern Shift</div>
+                            <div class="alert-description">Weekend traffic at major malls up 7%, but weekday traffic down 12% - possible indicator of changing consumer behavior.</div>
+                        </div>
+                        <div class="alert-time">12h ago</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- News Section -->
+            <div class="section-title">
+                <h2>Market News & Analysis</h2>
+                <a href="#" class="see-all">View All News</a>
+            </div>
+            
+            <div class="news-grid">
+                <div class="news-card">
+                    <div class="news-image" style="background-image: url('/api/placeholder/300/160');"></div>
+                    <div class="news-content">
+                        <div class="news-source">
+                            <span>Market Watch</span>
+                            <span class="news-date">Today</span>
+                        </div>
+                        <h3 class="news-title">Traffic Data Shows Retail Slowdown Ahead of Earnings Season</h3>
+                        <p class="news-summary">Analysis of foot traffic data from major shopping centers suggests potential underperformance for retail sector in upcoming earnings reports. TM Insights traffic index shows correlation with previous retail downturns.</p>
+                        <div class="news-tags">
+                            <div class="news-tag">Retail</div>
+                            <div class="news-tag">Earnings</div>
+                            <div class="news-tag">Traffic Analysis</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="news-card">
+                    <div class="news-image" style="background-image: url('/api/placeholder/300/160');"></div>
+                    <div class="news-content">
+                        <div class="news-source">
+                            <span>Bloomberg</span>
+                            <span class="news-date">Yesterday</span>
+                        </div>
+                        <h3 class="news-title">Commercial Real Estate Showing Signs of Recovery Based on Traffic Patterns</h3>
+                        <p class="news-summary">Office district traffic volumes in major cities have increased for the third consecutive month, potentially signaling a turnaround for commercial real estate investment trusts (REITs).</p>
+                        <div class="news-tags">
+                            <div class="news-tag">Real Estate</div>
+                            <div class="news-tag">REITs</div>
+                            <div class="news-tag">Urban Traffic</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="news-card">
+                    <div class="news-image" style="background-image: url('/api/placeholder/300/160');"></div>
+                    <div class="news-content">
+                        <div class="news-source">
+                            <span>Financial Times</span>
+                            <span class="news-date">2 days ago</span>
+                        </div>
+                        <h3 class="news-title">New Study Confirms Link Between Traffic Patterns and Consumer Spending</h3>
+                        <p class="news-summary">Research from Harvard Business School validates the approach used by TM Insights, showing strong correlation between regional traffic flow data and subsequent retail and service sector performance.</p>
+                        <div class="news-tags">
+                            <div class="news-tag">Research</div>
+                            <div class="news-tag">Consumer Spending</div>
+                            <div class="news-tag">Data Analysis</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Market Sectors -->
+            <div class="section-title">
+                <h2>Traffic-Impacted Sectors</h2>
+                <a href="#" class="see-all">View All Sectors</a>
+            </div>
+            
+            <div class="market-sectors">
+                <div class="sector-card">
+                    <div class="sector-header">
+                        <div class="sector-title">Retail</div>
+                        <div class="sector-change" style="background-color: rgba(220, 53, 69, 0.1); color: var(--danger);">-2.4%</div>
+                    </div>
+                    <div class="sector-stocks">
+                        <div class="sector-stock">
+                            <div class="stock-ticker">WMT</div>
+                            <div class="stock-percentage" style="color: var(--danger);">-1.2%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">TGT</div>
+                            <div class="stock-percentage" style="color: var(--danger);">-3.5%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">COST</div>
+                            <div class="stock-percentage" style="color: var(--success);">+0.8%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">HD</div>
+                            <div class="stock-percentage" style="color: var(--danger);">-2.1%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sector-card">
+                    <div class="sector-header">
+                        <div class="sector-title">Transportation</div>
+                        <div class="sector-change" style="background-color: rgba(40, 167, 69, 0.1); color: var(--success);">+1.7%</div>
+                    </div>
+                    <div class="sector-stocks">
+                        <div class="sector-stock">
+                            <div class="stock-ticker">UAL</div>
+                            <div class="stock-percentage" style="color: var(--success);">+2.3%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">DAL</div>
+                            <div class="stock-percentage" style="color: var(--success);">+1.9%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">JBHT</div>
+                            <div class="stock-percentage" style="color: var(--success);">+0.5%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">ODFL</div>
+                            <div class="stock-percentage" style="color: var(--success);">+3.2%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sector-card">
+                    <div class="sector-header">
+                        <div class="sector-title">Real Estate</div>
+                        <div class="sector-change" style="background-color: rgba(40, 167, 69, 0.1); color: var(--success);">+0.9%</div>
+                    </div>
+                    <div class="sector-stocks">
+                        <div class="sector-stock">
+                            <div class="stock-ticker">SPG</div>
+                            <div class="stock-percentage" style="color: var(--danger);">-0.6%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">BXP</div>
+                            <div class="stock-percentage" style="color: var(--success);">+2.3%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">PLD</div>
+                            <div class="stock-percentage" style="color: var(--success);">+1.8%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">EQIX</div>
+                            <div class="stock-percentage" style="color: var(--success);">+0.7%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sector-card">
+                    <div class="sector-header">
+                        <div class="sector-title">Restaurants</div>
+                        <div class="sector-change" style="background-color: rgba(255, 193, 7, 0.1); color: var(--warning);">-0.3%</div>
+                    </div>
+                    <div class="sector-stocks">
+                        <div class="sector-stock">
+                            <div class="stock-ticker">MCD</div>
+                            <div class="stock-percentage" style="color: var(--success);">+0.2%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">SBUX</div>
+                            <div class="stock-percentage" style="color: var(--danger);">-1.8%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">CMG</div>
+                            <div class="stock-percentage" style="color: var(--success);">+0.4%</div>
+                        </div>
+                        <div class="sector-stock">
+                            <div class="stock-ticker">DRI</div>
+                            <div class="stock-percentage" style="color: var(--danger);">-0.9%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.7.1/chart.min.js"></script>
+    <script>
+        // Initialize TomTom SDK
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the map when the page loads
+            initMap();
+            
+            // Initialize charts
+            initCharts();
+            
+            // Set up UI interactions
+            setupUIInteractions();
         });
         
-        container.innerHTML = '';
-        container.appendChild(stopList);
-      } else {
-        container.innerHTML = '<p>No stops available</p>';
-      }
-    }
-
-    // Update bus markers on the map
-    function updateBusMarkers(buses) {
-      // Clear existing markers
-      Object.values(busMarkers).forEach(marker => {
-        marker.remove();
-      });
-      
-      busMarkers = {};
-      
-      // Add new markers
-      buses.forEach(bus => {
-        const lat = parseFloat(bus.latitude);
-        const lng = parseFloat(bus.longitude);
-        const heading = parseInt(bus.heading);
-        const routeId = bus.route;
-        
-        if (!isNaN(lat) && !isNaN(lng)) {
-          // Find route to get color
-          const route = routes.find(r => r.id === routeId);
-          const color = route ? route.color : '#465436';
-          
-          const marker = L.marker([lat, lng]).addTo(map);
-          
-          marker.bindPopup(`
-            <b>Bus #${bus.id}</b><br>
-            Route: ${route ? route.name : 'Unknown'}<br>
-            Heading: ${getHeadingDirection(heading)}
-          `);
-          
-          busMarkers[bus.id] = marker;
+        function initMap() {
+            // This would normally use the TomTom Maps SDK, simulating for this demo
+            const mapContainer = document.getElementById('traffic-map');
+            
+            // Mock map initialization with a placeholder image
+            mapContainer.style.background = `url('/api/placeholder/800/400') center/cover no-repeat`;
+            mapContainer.innerHTML = '<div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 4px; font-size: 12px;">© TomTom · Map data</div>';
+            
+            // Would use API key: 'uipC1IvLlKWl01GJmXBNe0gMVknrIE4L'
+            console.log('Map initialized - would connect to TomTom API with provided key');
         }
-      });
-      
-      // Update status display
-      const refreshTime = new Date().toLocaleTimeString();
-      let statusDisplay = document.querySelector('.refresh-status');
-      
-      if (!statusDisplay) {
-        statusDisplay = document.createElement('div');
-        statusDisplay.className = 'refresh-status';
-        document.querySelector('.map-container').appendChild(statusDisplay);
-      }
-      
-      statusDisplay.textContent = `${buses.length} buses active • Updated: ${refreshTime}`;
-    }
-
-    // Convert heading to direction
-    function getHeadingDirection(heading) {
-      const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-      const index = Math.round(heading / 45) % 8;
-      return directions[index];
-    }
-
-    // Select a route and display on map
-    function selectRoute(routeId) {
-      selectedRoute = routeId;
-      
-      // Update UI
-      document.querySelectorAll('.route-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.id === routeId);
-      });
-      
-      // Draw route on map
-      drawRouteLine(routeId);
-    }
-
-    // Draw route line on map
-    function drawRouteLine(routeId) {
-      // Clear existing polylines
-      Object.values(routePolylines).forEach(polyline => {
-        polyline.remove();
-      });
-      
-      routePolylines = {};
-      
-      // Find the selected route
-      const route = routes.find(r => r.id === routeId);
-      
-      if (route && route.stops && route.stops.length > 0 && stops.length > 0) {
-        const stopCoordinates = route.stops
-          .map(stopId => {
-            const stop = stops.find(s => s.id === stopId);
-            if (stop) {
-              return [
-                parseFloat(stop.latitude),
-                parseFloat(stop.longitude)
-              ];
-            }
-            return null;
-          })
-          .filter(coord => coord !== null && coord[0] && coord[1]);
         
-        if (stopCoordinates.length > 1) {
-          const polyline = L.polyline(stopCoordinates, {
-            color: route.color || '#465436',
-            weight: 4,
-            opacity: 0.7
-          }).addTo(map);
-          
-          polyline.bindTooltip(route.name);
-          routePolylines[routeId] = polyline;
-          
-          // Zoom map to show the entire route
-          map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        function initCharts() {
+            const ctx = document.createElement('canvas');
+            document.getElementById('correlation-chart').appendChild(ctx);
+            
+            // Create correlation chart data
+            const trafficData = [65, 62, 60, 63, 58, 54, 59, 62, 65, 67, 71, 68, 64];
+            const retailIndexData = [102, 104, 103, 102, 100, 98, 95, 94, 96, 98, 100, 101, 99];
+            const labels = ['Mar 5', 'Mar 6', 'Mar 7', 'Mar 8', 'Mar 9', 'Mar 10', 'Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16', 'Mar 17'];
+            
+            // Create chart
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Traffic Congestion Index',
+                        data: trafficData,
+                        borderColor: '#E3170A',
+                        backgroundColor: 'rgba(227, 23, 10, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Retail Sector Index',
+                        data: retailIndexData,
+                        borderColor: '#495057',
+                        backgroundColor: 'rgba(73, 80, 87, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        tooltip: {
+                            enabled: true,
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Traffic Index'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            title: {
+                                display: true,
+                                text: 'Retail Index'
+                            }
+                        }
+                    }
+                }
+            });
         }
-      }
-    }
-
-    // Show error message
-    function showError(message) {
-      const container = document.getElementById('error-container');
-      
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'error-message';
-      errorDiv.textContent = message;
-      
-      container.innerHTML = '';
-      container.appendChild(errorDiv);
-      
-      // Auto-hide after 5 seconds
-      setTimeout(() => {
-        errorDiv.remove();
-      }, 5000);
-    }
-  </script>
+        
+        function setupUIInteractions() {
+            // Chart tabs switching
+            const chartTabs = document.querySelectorAll('.chart-tabs .chart-tab');
+            chartTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    chartTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Chart timeframe switching
+            const timeFrameTabs = document.querySelectorAll('.chart-timeframe .chart-tab');
+            timeFrameTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    timeFrameTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // City selector
+            document.getElementById('city-selector').addEventListener('change', function() {
+                // Would update map to selected city
+                console.log(`Selected city: ${this.value}`);
+            });
+            
+            // Map layer toggles
+            const toggles = document.querySelectorAll('.map-layer-toggle input');
+            toggles.forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const layerName = this.parentElement.nextElementSibling.textContent.trim();
+                    console.log(`${layerName} layer ${this.checked ? 'enabled' : 'disabled'}`);
+                });
+            });
+            
+            // Add pulse animation to important insights
+            const insightCards = document.querySelectorAll('.insight-card');
+            insightCards[0].classList.add('pulse'); // Highlight the first insight
+            
+            // Make alerts dismissable
+            const alertItems = document.querySelectorAll('.alert-item');
+            alertItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.opacity = '0.5';
+                    setTimeout(() => {
+                        this.style.display = 'none';
+                    }, 300);
+                });
+            });
+        }
+        
+        // Traffic API integration (simulated)
+        function fetchTrafficData(city = 'newyork') {
+            // This would call the TomTom Traffic API using the provided API key
+            console.log(`Fetching traffic data for ${city} using API key`);
+            
+            // Simulated API call using the URL format from the documentation
+            const apiURL = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/12/2044/1360.png?key=uipC1IvLlKWl01GJmXBNe0gMVknrIE4L`;
+            
+            // Simplified simulation for demo
+            return {
+                congestionIndex: Math.floor(Math.random() * 30) + 50,
+                segments: [
+                    { id: 'seg1', location: 'Downtown', congestion: 'high', speed: 15 },
+                    { id: 'seg2', location: 'Retail District', congestion: 'medium', speed: 25 },
+                    { id: 'seg3', location: 'Industrial Zone', congestion: 'low', speed: 45 }
+                ]
+            };
+        }
+        
+        // Financial data integration (simulated)
+        function correlateTrafficWithMarket(trafficData) {
+            // This would analyze the traffic data and correlate with financial indicators
+            console.log('Correlating traffic data with market indicators');
+            
+            // In a real implementation, this would use machine learning or statistical
+            // analysis to find correlations between traffic patterns and market performance
+            return {
+                retailImpact: trafficData.congestionIndex < 65 ? 'negative' : 'positive',
+                transportationImpact: trafficData.congestionIndex > 70 ? 'negative' : 'positive',
+                restaurantImpact: trafficData.segments.find(s => s.location === 'Downtown').congestion === 'high' ? 'positive' : 'neutral'
+            };
+        }
+        
+        // Initial simulation
+        const trafficData = fetchTrafficData();
+        const marketCorrelation = correlateTrafficWithMarket(trafficData);
+        console.log('Traffic-Market Correlation:', marketCorrelation);
+    </script>
 </body>
 </html>
