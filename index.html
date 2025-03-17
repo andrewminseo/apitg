@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UMich Magic Bus Tracker</title>
+    <style>
+        :root {
+            --primary-color: #00274c;
+            --secondary-color: #ffcb05;
+            --accent-color: #2d65b5;
+            --light-color: #f5f5f5;
+            --dark-color: #333;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 5px solid var(--secondary-color);
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+        }
+        
+        .status-section {
+            background-color: #fff;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .announcements {
+            margin-bottom: 20px;
+        }
+        
+        .announcement {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        
+        .emergency {
+            background-color: #ffdddd;
+            border-left: 5px solid #f44336;
+        }
+        
+        .status-update {
+            background-color: #e7f3fe;
+            border-left: 5px solid #2196F3;
+        }
+        
+        .tab-container {
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .tab.active {
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            border-bottom: 1px solid transparent;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .route-list, .stop-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .route-item, .stop-item {
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .route-item:hover, .stop-item:hover {
+            transform: translateY(-3px);
+        }
+        
+        .route-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .route-stops {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #map-container {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .bus-info {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+        }
+        
+        .bus-id {
+            font-weight: bold;
+            margin-right: 10px;
+            padding: 5px 10px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 3px;
+        }
+        
+        .bus-route {
+            padding: 3px 8px;
+            border-radius: 3px;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .arrival-info {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .arrival-time {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .refresh-btn {
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .refresh-btn:hover {
+            background-color: var(--primary-color);
+        }
+        
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            padding: 20px;
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        #selectedRoute, #selectedStop {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>UMich Magic Bus Tracker</h1>
+            <p>Real-time bus tracking for University of Michigan</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="status-section announcements" id="announcements">
+            <h2>Service Announcements</h2>
+            <div class="loading">Loading announcements...</div>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tabs">
+                <div class="tab active" data-tab="buses">Active Buses</div>
+                <div class="tab" data-tab="routes">Routes</div>
+                <div class="tab" data-tab="stops">Stops</div>
+                <div class="tab" data-tab="arrivals">Arrivals</div>
+            </div>
+            
+            <div class="tab-content active" id="buses">
+                <h2>Active Buses</h2>
+                <div class="loading">Loading buses...</div>
+                <div id="bus-list"></div>
+                <button class="refresh-btn" id="refresh-buses">Refresh Buses</button>
+            </div>
+            
+            <div class="tab-content" id="routes">
+                <h2>Bus Routes</h2>
+                <div class="loading">Loading routes...</div>
+                <ul class="route-list" id="route-list"></ul>
+                <div id="selectedRoute"></div>
+            </div>
+            
+            <div class="tab-content" id="stops">
+                <h2>Bus Stops</h2>
+                <div class="loading">Loading stops...</div>
+                <ul class="stop-list" id="stop-list"></ul>
+                <div id="selectedStop"></div>
+            </div>
+            
+            <div class="tab-content" id="arrivals">
+                <h2>Arrivals</h2>
+                <div class="loading">Loading arrivals...</div>
+                <div id="arrival-list"></div>
+                <button class="refresh-btn" id="refresh-arrivals">Refresh Arrivals</button>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 UMich Magic Bus Tracker | Using Magic Bus API</p>
+        </div>
+    </footer>
+
+    <script>
+        // API Endpoint
+        const API_BASE_URL = 'http://mbus.pts.umich.edu/api/v0';
+        
+        // Cache for API responses
+        const cache = {
+            routes: null,
+            stops: null
+        };
+        
+        // DOM Elements
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const busListElement = document.getElementById('bus-list');
+        const routeListElement = document.getElementById('route-list');
+        const stopListElement = document.getElementById('stop-list');
+        const arrivalListElement = document.getElementById('arrival-list');
+        const announcementsElement = document.getElementById('announcements');
+        const selectedRouteElement = document.getElementById('selectedRoute');
+        const selectedStopElement = document.getElementById('selectedStop');
+        
+        // Tab switching functionality
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const tabId = tab.getAttribute('data-tab');
+                
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+                
+                // Load data for the selected tab if not already loaded
+                if (tabId === 'routes' && !cache.routes) {
+                    fetchRoutes();
+                } else if (tabId === 'stops' && !cache.stops) {
+                    fetchStops();
+                } else if (tabId === 'arrivals') {
+                    fetchArrivals();
+                }
+            });
+        });
+        
+        // Initial data loading
+        fetchAnnouncements();
+        fetchBuses();
+        
+        // Refresh buttons
+        document.getElementById('refresh-buses').addEventListener('click', fetchBuses);
+        document.getElementById('refresh-arrivals').addEventListener('click', fetchArrivals);
+        
+        // Fetch Announcements
+        function fetchAnnouncements() {
+            fetch(`${API_BASE_URL}/announcements/`)
+                .then(response => response.json())
+                .then(data => {
+                    announcementsElement.innerHTML = '<h2>Service Announcements</h2>';
+                    
+                    if (data.response && data.response.length > 0) {
+                        data.response.forEach(announcement => {
+                            const announcementElement = document.createElement('div');
+                            announcementElement.className = 'announcement';
+                            
+                            // Add specific class based on announcement type
+                            if (announcement.type === 'Emergency Message') {
+                                announcementElement.classList.add('emergency');
+                            } else {
+                                announcementElement.classList.add('status-update');
+                            }
+                            
+                            announcementElement.style.color = announcement.color || '#000';
+                            
+                            announcementElement.innerHTML = `
+                                <h3>${announcement.title}</h3>
+                                <p>${announcement.text}</p>
+                                <small>${announcement.type}</small>
+                            `;
+                            
+                            announcementsElement.appendChild(announcementElement);
+                        });
+                    } else {
+                        announcementsElement.innerHTML += '<p>No active announcements at this time.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching announcements:', error);
+                    announcementsElement.innerHTML = '<h2>Service Announcements</h2><p>Failed to load announcements. Please try again later.</p>';
+                });
+        }
+        
+        // Fetch Buses
+        function fetchBuses() {
+            busListElement.innerHTML = '<div class="loading">Loading buses...</div>';
+            
+            fetch(`${API_BASE_URL}/buses/`)
+                .then(response => response.json())
+                .then(data => {
+                    busListElement.innerHTML = '';
+                    
+                    if (data.response && data.response.length > 0) {
+                        // If we have routes data, use it to get route colors
+                        fetchRoutes().then(() => {
+                            data.response.forEach(bus => {
+                                const busElement = document.createElement('div');
+                                busElement.className = 'bus-info';
+                                
+                                // Get route color if available
+                                let routeColor = '#666';
+                                let routeName = bus.route;
+                                
+                                if (cache.routes) {
+                                    const route = cache.routes.find(r => r.id === bus.route);
+                                    if (route) {
+                                        routeColor = route.color;
+                                        routeName = route.name;
+                                    }
+                                }
+                                
+                                busElement.innerHTML = `
+                                    <div class="bus-id">Bus #${bus.id}</div>
+                                    <div class="bus-route" style="background-color: ${routeColor};">${routeName}</div>
+                                    <div class="bus-location">
+                                        Lat: ${bus.latitude}, Long: ${bus.longitude}, Heading: ${bus.heading}°
+                                    </div>
+                                `;
+                                
+                                busListElement.appendChild(busElement);
+                            });
+                        });
+                    } else {
+                        busListElement.innerHTML = '<p>No active buses at this time.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching buses:', error);
+                    busListElement.innerHTML = '<p>Failed to load buses. Please try again later.</p>';
+                });
+        }
+        
+        // Fetch Routes
+        function fetchRoutes() {
+            return new Promise((resolve, reject) => {
+                if (cache.routes) {
+                    renderRoutes(cache.routes);
+                    resolve(cache.routes);
+                    return;
+                }
+                
+                const loadingElement = document.querySelector('#routes .loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'block';
+                }
+                
+                fetch(`${API_BASE_URL}/routes/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (loadingElement) {
+                            loadingElement.style.display = 'none';
+                        }
+                        
+                        if (data.response && data.response.length > 0) {
+                            cache.routes = data.response;
+                            renderRoutes(data.response);
+                            resolve(data.response);
+                        } else {
+                            routeListElement.innerHTML = '<p>No routes available.</p>';
+                            resolve([]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching routes:', error);
+                        if (loadingElement) {
+                            loadingElement.style.display = 'none';
+                        }
+                        routeListElement.innerHTML = '<p>Failed to load routes. Please try again later.</p>';
+                        reject(error);
+                    });
+            });
+        }
+        
+        function renderRoutes(routes) {
+            routeListElement.innerHTML = '';
+            
+            const activeRoutes = routes.filter(route => route.is_active);
+            
+            activeRoutes.forEach(route => {
+                const routeElement = document.createElement('li');
+                routeElement.className = 'route-item';
+                routeElement.style.borderLeft = `5px solid ${route.color}`;
+                
+                routeElement.innerHTML = `
+                    <div class="route-name">${route.name} (ID: ${route.id})</div>
+                    <div class="route-stops">${route.stops.length} stops</div>
+                `;
+                
+                routeElement.addEventListener('click', () => {
+                    showRouteDetails(route);
+                });
+                
+                routeListElement.appendChild(routeElement);
+            });
+            
+            // Add inactive routes with visual distinction
+            routes.filter(route => !route.is_active).forEach(route => {
+                const routeElement = document.createElement('li');
+                routeElement.className = 'route-item';
+                routeElement.style.borderLeft = `5px solid ${route.color}`;
+                routeElement.style.opacity = '0.6';
+                
+                routeElement.innerHTML = `
+                    <div class="route-name">${route.name} (ID: ${route.id}) - INACTIVE</div>
+                    <div class="route-stops">${route.stops.length} stops</div>
+                `;
+                
+                routeElement.addEventListener('click', () => {
+                    showRouteDetails(route);
+                });
+                
+                routeListElement.appendChild(routeElement);
+            });
+        }
+        
+        function showRouteDetails(route) {
+            // First, ensure we have stops data to show stop names
+            fetchStops().then(() => {
+                selectedRouteElement.style.display = 'block';
+                selectedRouteElement.innerHTML = `
+                    <h3 style="color: ${route.color};">${route.name} (ID: ${route.id})</h3>
+                    <p>Status: ${route.is_active ? 'Active' : 'Inactive'}</p>
+                    <h4>Stops on this route:</h4>
+                    <ol id="routeStopsList"></ol>
+                `;
+                
+                const stopsList = document.getElementById('routeStopsList');
+                
+                // Add each stop to the list
+                if (route.stops.length > 0) {
+                    route.stops.forEach(stopId => {
+                        const stopElement = document.createElement('li');
+                        
+                        // Find stop details if available
+                        if (cache.stops) {
+                            const stop = cache.stops.find(s => s.id === stopId);
+                            if (stop) {
+                                stopElement.textContent = `${stop.human_name} (${stop.unique_name})`;
+                            } else {
+                                stopElement.textContent = `Stop ID: ${stopId}`;
+                            }
+                        } else {
+                            stopElement.textContent = `Stop ID: ${stopId}`;
+                        }
+                        
+                        stopsList.appendChild(stopElement);
+                    });
+                } else {
+                    stopsList.innerHTML = '<p>No stops defined for this route.</p>';
+                }
+                
+                // Scroll to the details
+                selectedRouteElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+        
+        // Fetch Stops
+        function fetchStops() {
+            return new Promise((resolve, reject) => {
+                if (cache.stops) {
+                    renderStops(cache.stops);
+                    resolve(cache.stops);
+                    return;
+                }
+                
+                const loadingElement = document.querySelector('#stops .loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'block';
+                }
+                
+                fetch(`${API_BASE_URL}/stops/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (loadingElement) {
+                            loadingElement.style.display = 'none';
+                        }
+                        
+                        if (data.response && data.response.length > 0) {
+                            cache.stops = data.response;
+                            renderStops(data.response);
+                            resolve(data.response);
+                        } else {
+                            stopListElement.innerHTML = '<p>No stops available.</p>';
+                            resolve([]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching stops:', error);
+                        if (loadingElement) {
+                            loadingElement.style.display = 'none';
+                        }
+                        stopListElement.innerHTML = '<p>Failed to load stops. Please try again later.</p>';
+                        reject(error);
+                    });
+            });
+        }
+        
+        function renderStops(stops) {
+            stopListElement.innerHTML = '';
+            
+            stops.forEach(stop => {
+                const stopElement = document.createElement('li');
+                stopElement.className = 'stop-item';
+                
+                stopElement.innerHTML = `
+                    <div class="route-name">${stop.human_name}</div>
+                    <div class="route-stops">${stop.unique_name}</div>
+                `;
+                
+                stopElement.addEventListener('click', () => {
+                    showStopDetails(stop);
+                });
+                
+                stopListElement.appendChild(stopElement);
+            });
+        }
+        
+        function showStopDetails(stop) {
+            selectedStopElement.style.display = 'block';
+            selectedStopElement.innerHTML = `
+                <h3>${stop.human_name}</h3>
+                <p><strong>Unique Name:</strong> ${stop.unique_name}</p>
+                ${stop.additional_name && stop.additional_name !== 'None' ? `<p><strong>Additional Name:</strong> ${stop.additional_name}</p>` : ''}
+                <p><strong>ID:</strong> ${stop.id}</p>
+                <p><strong>Location:</strong> Lat ${stop.latitude}, Long ${stop.longitude}</p>
+                <p><strong>Heading:</strong> ${stop.heading}°</p>
+                
+                <h4>Routes serving this stop:</h4>
+                <div id="stopRoutesList">Loading routes information...</div>
+                
+                <h4>Upcoming arrivals:</h4>
+                <div id="stopArrivalsList">Loading arrival information...</div>
+            `;
+            
+            // Fetch routes that serve this stop
+            fetchRoutes().then(routes => {
+                const routesList = document.getElementById('stopRoutesList');
+                routesList.innerHTML = '';
+                
+                const servingRoutes = routes.filter(route => route.stops.includes(stop.id));
+                
+                if (servingRoutes.length > 0) {
+                    servingRoutes.forEach(route => {
+                        const routeElement = document.createElement('div');
+                        routeElement.className = 'bus-route';
+                        routeElement.style.backgroundColor = route.color;
+                        routeElement.style.display = 'inline-block';
+                        routeElement.style.margin = '5px';
+                        routeElement.style.color = '#fff';
+                        routeElement.style.padding = '5px 10px';
+                        routeElement.style.borderRadius = '3px';
+                        
+                        routeElement.textContent = route.name;
+                        
+                        routesList.appendChild(routeElement);
+                    });
+                } else {
+                    routesList.innerHTML = '<p>No active routes currently serve this stop.</p>';
+                }
+            });
+            
+            // Fetch arrivals for this stop
+            fetch(`${API_BASE_URL}/arrivals/`)
+                .then(response => response.json())
+                .then(data => {
+                    const arrivalsList = document.getElementById('stopArrivalsList');
+                    
+                    if (data.response && data.response.length > 0) {
+                        // Find arrivals for this stop
+                        const stopArrivals = data.response.find(arrival => arrival.stop_id === stop.id);
+                        
+                        if (stopArrivals && stopArrivals.arrivals && stopArrivals.arrivals.length > 0) {
+                            arrivalsList.innerHTML = '';
+                            
+                            stopArrivals.arrivals.forEach(arrival => {
+                                const arrivalElement = document.createElement('div');
+                                arrivalElement.className = 'arrival-info';
+                                
+                                // Get route information if available
+                                let routeName = `Route ${arrival.route_id}`;
+                                let routeColor = '#666';
+                                
+                                if (cache.routes) {
+                                    const route = cache.routes.find(r => r.id === arrival.route_id);
+                                    if (route) {
+                                        routeName = route.name;
+                                        routeColor = route.color;
+                                    }
+                                }
+                                
+                                // Convert minutes to a more readable format
+                                const nextMin = Math.floor(arrival.next / 60);
+                                const nextSec = Math.floor(arrival.next % 60);
+                                const secondMin = Math.floor(arrival.second / 60);
+                                const secondSec = Math.floor(arrival.second % 60);
+                                
+                                arrivalElement.innerHTML = `
+                                    <div class="bus-route" style="background-color: ${routeColor};">${routeName}</div>
+                                    <p>Next arrival: <span class="arrival-time">${nextMin}m ${nextSec}s</span></p>
+                                    <p>Following arrival: <span class="arrival-time">${secondMin}m ${secondSec}s</span></p>
+                                `;
+                                
+                                arrivalsList.appendChild(arrivalElement);
+                            });
+                        } else {
+                            arrivalsList.innerHTML = '<p>No upcoming arrivals for this stop.</p>';
+                        }
+                    } else {
+                        arrivalsList.innerHTML = '<p>No arrival information available.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching arrivals:', error);
+                    const arrivalsList = document.getElementById('stopArrivalsList');
+                    arrivalsList.innerHTML = '<p>Failed to load arrival information.</p>';
+                });
+            
+            // Scroll to the details
+            selectedStopElement.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Fetch Arrivals
+        function fetchArrivals() {
+            arrivalListElement.innerHTML = '<div class="loading">Loading arrivals...</div>';
+            
+            fetch(`${API_BASE_URL}/arrivals/`)
+                .then(response => response.json())
+                .then(data => {
+                    arrivalListElement.innerHTML = '';
+                    
+                    if (data.response && data.response.length > 0) {
+                        // We need stops data to show stop names
+                        fetchStops().then(() => {
+                            // We need routes data to show route names and colors
+                            fetchRoutes().then(() => {
+                                data.response.forEach(stopArrival => {
+                                    // Only show stops with upcoming arrivals
+                                    if (stopArrival.arrivals && stopArrival.arrivals.length > 0) {
+                                        const arrivalSection = document.createElement('div');
+                                        arrivalSection.className = 'arrival-section';
+                                        
+                                        // Find stop information
+                                        let stopName = `Stop ID: ${stopArrival.stop_id}`;
+                                        
+                                        if (cache.stops) {
+                                            const stop = cache.stops.find(s => s.id === stopArrival.stop_id);
+                                            if (stop) {
+                                                stopName = `${stop.human_name} (${stop.unique_name})`;
+                                            }
+                                        }
+                                        
+                                        arrivalSection.innerHTML = `<h3>${stopName}</h3>`;
+                                        
+                                        // Add each arrival for this stop
+                                        stopArrival.arrivals.forEach(arrival => {
+                                            const arrivalElement = document.createElement('div');
+                                            arrivalElement.className = 'arrival-info';
+                                            
+                                            // Get route information if available
+                                            let routeName = `Route ${arrival.route_id}`;
+                                            let routeColor = '#666';
+                                            
+                                            if (cache.routes) {
+                                                const route = cache.routes.find(r => r.id === arrival.route_id);
+                                                if (route) {
+                                                    routeName = route.name;
+                                                    routeColor = route.color;
+                                                }
+                                            }
+                                            
+                                            // Convert minutes to a more readable format
+                                            const nextMin = Math.floor(arrival.next / 60);
+                                            const nextSec = Math.floor(arrival.next % 60);
+                                            const secondMin = Math.floor(arrival.second / 60);
+                                            const secondSec = Math.floor(arrival.second % 60);
+                                            
+                                            arrivalElement.innerHTML = `
+                                                <div class="bus-route" style="background-color: ${routeColor};">${routeName}</div>
+                                                <p>Next arrival: <span class="arrival-time">${nextMin}m ${nextSec}s</span></p>
+                                                <p>Following arrival: <span class="arrival-time">${secondMin}m ${secondSec}s</span></p>
+                                            `;
+                                            
+                                            arrivalSection.appendChild(arrivalElement);
+                                        });
+                                        
+                                        arrivalListElement.appendChild(arrivalSection);
+                                    }
+                                });
+                                
+                                // If no stops have arrivals
+                                if (arrivalListElement.children.length === 0) {
+                                    arrivalListElement.innerHTML = '<p>No upcoming arrivals at any stops.</p>';
+                                }
+                            });
+                        });
+                    } else {
+                        arrivalListElement.innerHTML = '<p>No arrival information available.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching arrivals:', error);
+                    arrivalListElement.innerHTML = '<p>Failed to load arrivals. Please try again later.</p>';
+                });
+        }
+    </script>
+</body>
+</html>
