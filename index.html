@@ -3,17 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>U-M Bus Tracker</title>
+  <title>Ann Arbor Bus Tracker - TheRide</title>
+  <meta name="description" content="Real-time bus tracking for Ann Arbor, Michigan. Find buses, routes, and arrival times for TheRide.">
+  <link rel="shortcut icon" href="https://www.theride.org/themes/custom/bootstrap_sass/favicon.ico" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --michigan-blue: #00274c;
-      --michigan-maize: #ffcb05;
+      /* Ann Arbor theme colors */
+      --ann-arbor-green: #465436;
+      --ann-arbor-teal: #4a746a;
+      --ann-arbor-brick: #a13c2e;
+      --ann-arbor-gold: #d6bb7a;
+      --ann-arbor-tan: #e6e2d3;
       --light-gray: #f2f2f2;
       --dark-gray: #333;
       --medium-gray: #6c757d;
@@ -38,7 +43,7 @@
     }
     
     header {
-      background-color: var(--michigan-blue);
+      background-color: var(--ann-arbor-green);
       color: var(--white);
       padding: 1rem;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -68,6 +73,7 @@
     .logo h1 {
       font-size: 1.5rem;
       font-weight: 700;
+      color: var(--white);
     }
     
     .header-actions {
@@ -76,7 +82,7 @@
     }
     
     .refresh-btn {
-      background-color: var(--accent-blue);
+      background-color: var(--ann-arbor-brick);
       color: var(--white);
       border: none;
       padding: 0.5rem 1rem;
@@ -90,7 +96,7 @@
     }
     
     .refresh-btn:hover {
-      background-color: #306b8e;
+      background-color: #8a3226;
     }
     
     .main-container {
@@ -117,6 +123,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       overflow: hidden;
+      position: relative;
     }
     
     #map {
@@ -140,7 +147,7 @@
     }
     
     .tab.active {
-      background-color: var(--michigan-blue);
+      background-color: var(--ann-arbor-teal);
       color: var(--white);
     }
     
@@ -192,8 +199,8 @@
     }
     
     .route-item.active, .stop-item.active {
-      border-left-color: var(--michigan-maize);
-      background-color: #e9e9e9;
+      border-left-color: var(--ann-arbor-gold);
+      background-color: var(--ann-arbor-tan);
     }
     
     .route-color {
@@ -210,8 +217,8 @@
     }
     
     .announcement-container {
-      background-color: var(--michigan-maize);
-      color: var(--michigan-blue);
+      background-color: var(--ann-arbor-gold);
+      color: var(--ann-arbor-green);
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
       border-radius: 4px;
@@ -226,7 +233,7 @@
     }
     
     .bus-icon {
-      color: var(--michigan-blue);
+      color: var(--ann-arbor-teal);
       font-size: 1.2rem;
       margin-right: 0.5rem;
     }
@@ -249,18 +256,1708 @@
       color: var(--white);
     }
     
-    .loading {
+    .loading-container {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100px;
-      color: var(--medium-gray);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background-color: rgba(74, 116, 106, 0.1);
+      border-radius: 4px;
+      border-left: 4px solid var(--ann-arbor-teal);
     }
     
     .spinner {
       border: 4px solid rgba(0, 0, 0, 0.1);
       border-radius: 50%;
-      border-top: 4px solid var(--michigan-blue);
+      border-top: 4px solid var(--ann-arbor-teal);
+      width: 24px;
+      height: 24px;
+      margin-right: 1rem;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .stop-details {
+      padding: 1rem;
+      background-color: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+    }
+    
+    .stop-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stop-arrivals {
+      margin-top: 0.5rem;
+    }
+    
+    .arrival-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .arrival-item:last-child {
+      border-bottom: none;
+    }
+    
+    .route-name {
+      font-weight: 600;
+    }
+    
+    .arrival-times {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .time-chip {
+      background-color: var(--ann-arbor-teal);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .bus-marker {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: var(--ann-arbor-green);
+      color: var(--white);
+      font-weight: 600;
+      border: 2px solid var(--white);
+    }
+    
+    .error-message {
+      background-color: var(--danger-red);
+      color: var(--white);
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .error-message svg {
+      flex-shrink: 0;
+    }
+    
+    .bus-popup {
+      min-width: 200px;
+    }
+    
+    .bus-popup-heading {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 5px;
+      color: var(--ann-arbor-green);
+    }
+    
+    .bus-popup-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .no-results {
+      padding: 1rem;
+      text-align: center;
+      color: var(--medium-gray);
+      font-style: italic;
+    }
+    
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+    }
+    
+    .leaflet-popup-content {
+      margin: 12px 12px;
+      line-height: 1.5;
+    }
+    
+    .refresh-status {
+      background-color: rgba(255, 255, 255, 0.9) !important;
+      padding: 5px 10px !important;
+      border-radius: 4px !important;
+      font-size: 12px !important;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+      border: 1px solid #ccc !important;
+    }
+    
+    .tips-container {
+      padding: 1rem;
+      border-top: 1px solid #e0e0e0;
+      margin-top: auto;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .sidebar {
+        width: 100%;
+        margin-bottom: 1rem;
+        max-height: 300px;
+      }
+      
+      .map-container {
+        height: 400px;
+      }
+      
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .header-actions {
+        width: 100%;
+      }
+      
+      .refresh-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="4" fill="#465436"/>
+          <path d="M8 12C8 10.8954 8.89543 10 10 10H30C31.1046 10 32 10.8954 32 12V28C32 29.1046 31.1046 30 30 30H10C8.89543 30 8 29.1046 8 28V12Z" fill="#4a746a"/>
+          <path d="M12 18C12 16.8954 12.8954 16 14 16H26C27.1046 16 28 16.8954 28 18V28H12V18Z" fill="#d6bb7a"/>
+          <circle cx="15" cy="26" r="1.5" fill="#465436"/>
+          <circle cx="25" cy="26" r="1.5" fill="#465436"/>
+          <rect x="18" y="20" width="4" height="4" rx="1" fill="#465436"/>
+        </svg>
+        <h1>Ann Arbor Bus Tracker</h1>
+      </div>
+      <div class="header-actions">
+        <button id="refresh-btn" class="refresh-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="main-container">
+    <div class="sidebar">
+      <div class="tab-container">
+        <div class="tab active" data-tab="routes">Routes</div>
+        <div class="tab" data-tab="stops">Stops</div>
+      </div>
+      
+      <div id="announcements">
+        <!-- Announcements will appear here -->
+      </div>
+      
+      <div id="error-container">
+        <!-- Error messages will appear here -->
+      </div>
+      
+      <div id="loading-status" class="loading-container">
+        <div class="spinner"></div>
+        <span>Connecting to TheRide API...</span>
+      </div>
+      
+      <div id="routes-tab" class="tab-content active">
+        <div class="search-container">
+          <input type="text" class="search-input" id="route-search" placeholder="Search routes...">
+        </div>
+        <div id="routes-list-container"></div>
+      </div>
+      
+      <div id="stops-tab" class="tab-content">
+        <div class="search-container">
+          <input type="text" class="search-input" id="stop-search" placeholder="Search stops...">
+        </div>
+        <div id="stops-list-container"></div>
+      </div>
+      
+      <div class="tips-container">
+        <h3 style="margin-top: 0; color: var(--ann-arbor-green);">Tips</h3>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+          <li>Click on a route to see its path</li>
+          <li>Click on a stop to see arrival times</li>
+          <li>Active buses are shown in real-time</li>
+          <li>Search for specific routes or stops</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script>
+    // API Configuration
+    const apiBase = 'http://mbus.pts.umich.edu/api/v0';
+    const apiKey = 'XXcFMTXidWRLjqVR9Aw8p4sXr';
+    
+    // Initialize variables
+    let map;
+    let busMarkers = {};
+    let routePolylines = {};
+    let stopMarkers = {};
+    let selectedRoute = null;
+    let selectedStop = null;
+    let routes = [];
+    let stops = [];
+    let announcements = [];
+    let busRefreshInterval;
+
+    // Ensure API key is passed in requests if needed
+    async function fetchApi(endpoint) {
+      try {
+        const url = `${apiBase}/${endpoint}`;
+        console.log(`Fetching data from: ${url}`);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error(`Error fetching from ${endpoint}:`, error);
+        throw error;
+      }
+    }
+
+    // Initialize the map
+    function initMap() {
+      map = L.map('map').setView([42.2808, -83.7430], 15); // Centered on Ann Arbor
+      
+      // Use OpenStreetMap tiles with proper attribution
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      
+      // Add map scale
+      L.control.scale().addTo(map);
+    }
+
+    // Initial data loading
+    async function loadData() {
+      try {
+        // Load data in parallel
+        await Promise.all([
+          loadAnnouncements(),
+          loadRoutes(),
+          loadStops()
+        ]);
+        
+        // Once routes and stops are loaded, load buses
+        await loadBuses();
+      } catch (error) {
+        console.error('Error during initial data loading:', error);
+        showError('Failed to load data. Please try again later.');
+      }
+    }
+
+    // Load announcements from the API
+    async function loadAnnouncements() {
+      try {
+        const data = await fetchApi('announcements/');
+        console.log('Announcements data:', data);
+        
+        announcements = data.response || [];
+        renderAnnouncements();
+        return announcements;
+      } catch (error) {
+        console.error('Error loading announcements:', error);
+        showError('Failed to load announcements. Please check your connection.');
+        return [];
+      }
+    }
+
+    // Load routes from the API
+    async function loadRoutes() {
+      showLoading('routes-list-container');
+      
+      try {
+        const data = await fetchApi('routes/');
+        console.log('Routes data:', data);
+        
+        routes = data.response || [];
+        renderRoutes();
+        
+        if (stops.length > 0) {
+          // Only draw route lines if stops are loaded
+          drawRouteLines();
+        }
+        
+        hideLoading('routes-list-container');
+        return routes;
+      } catch (error) {
+        console.error('Error loading routes:', error);
+        showError('Failed to load routes. Please try again later.');
+        hideLoading('routes-list-container');
+        return [];
+      }
+    }
+
+    // Load stops from the API
+    async function loadStops() {
+      showLoading('stops-list-container');
+      
+      try {
+        const data = await fetchApi('stops/');
+        console.log('Stops data:', data);
+        
+        stops = data.response || [];
+        renderStops();
+        
+        if (stops.length > 0) {
+          addStopMarkersToMap();
+        }
+        
+        hideLoading('stops-list-container');
+        return stops;
+      } catch (error) {
+        console.error('Error loading stops:', error);
+        showError('Failed to load stops. Please try again later.');
+        hideLoading('stops-list-container');
+        return [];
+      }
+    }
+
+    // Load buses from the API
+    async function loadBuses() {
+      try {
+        const data = await fetchApi('buses/');
+        console.log('Buses data:', data);
+        
+        const buses = data.response || [];
+        updateBusMarkers(buses);
+        return buses;
+      } catch (error) {
+        console.error('Error loading buses:', error);
+        showError('Failed to load bus data. Please try again later.');
+        return [];
+      }
+    }
+
+    // Load arrivals for a specific stop
+    async function loadArrivals(stopId) {
+      try {
+        const data = await fetchApi('arrivals/');
+        console.log('Arrivals data:', data);
+        
+        const stopArrivals = (data.response || []).find(item => item.stop_id === stopId);
+        return stopArrivals ? stopArrivals.arrivals : [];
+      } catch (error) {
+        console.error('Error loading arrivals:', error);
+        return [];
+      }
+    }
+
+    // Render announcements in the UI
+    function renderAnnouncements() {
+      const container = document.getElementById('announcements');
+      container.innerHTML = '';
+      
+      if (announcements.length > 0) {
+        announcements.forEach(announcement => {
+          const announcementEl = document.createElement('div');
+          announcementEl.className = 'announcement-container';
+          announcementEl.style.backgroundColor = announcement.color || '#d6bb7a';
+          announcementEl.style.color = getContrastColor(announcement.color);
+          
+          announcementEl.innerHTML = `
+            <span class="announcement-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+              </svg>
+            </span>
+            <span>${announcement.text}</span>
+          `;
+          
+          container.appendChild(announcementEl);
+        });
+      }
+    }
+    
+    // Get contrasting text color based on background
+    function getContrastColor(hexColor) {
+      // Default to dark text
+      if (!hexColor) return '#333333';
+      
+      // Convert hex to RGB
+      let r = 0, g = 0, b = 0;
+      
+      // 3 digits
+      if (hexColor.length === 4) {
+        r = parseInt(hexColor[1] + hexColor[1], 16);
+        g = parseInt(hexColor[2] + hexColor[2], 16);
+        b = parseInt(hexColor[3] + hexColor[3], 16);
+      } 
+      // 6 digits
+      else if (hexColor.length === 7) {
+        r = parseInt(hexColor.slice(1, 3), 16);
+        g = parseInt(hexColor.slice(3, 5), 16);
+        b = parseInt(hexColor.slice(5, 7), 16);
+      }
+      
+      // Calculate brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
+      const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+      
+      // Return white for dark colors, black for light colors
+      return brightness < 128 ? '#ffffff' : '#333333';
+    }
+
+    // Render routes in the UI
+    function renderRoutes() {
+      const container = document.getElementById('routes-list-container');
+      container.innerHTML = '';
+      
+      if (routes.length > 0) {
+        const routeList = document.createElement('ul');
+        routeList.className = 'route-list';
+        
+        // Sort routes: active first, then by name
+        const sortedRoutes = [...routes].sort((a, b) => {
+          // First sort by active status
+          if (a.is_active !== b.is_active) {
+            return b.is_active - a.is_active; // Active routes first
+          }
+          // Then sort by name
+          return a.name.localeCompare(b.name);
+        });
+        
+        sortedRoutes.forEach(route => {
+          const routeItem = document.createElement('li');
+          routeItem.className = `route-item ${selectedRoute === route.id ? 'active' : ''}`;
+          routeItem.dataset.id = route.id;
+          
+          const statusClass = route.is_active ? 'status-active' : 'status-inactive';
+          const statusText = route.is_active ? 'Active' : 'Inactive';
+          
+          routeItem.innerHTML = `
+            <span class="route-color" style="background-color: ${route.color}"></span>
+            ${route.name}
+            <span class="status-indicator ${statusClass}">${statusText}</span>
+          `;
+          
+          routeItem.addEventListener('click', () => {
+            selectRoute(route.id);
+          });
+          
+          routeList.appendChild(routeItem);
+        });
+        
+        container.appendChild(routeList);
+      } else {
+        container.innerHTML = '<div class="loading-container">No routes available</div>';
+      }
+    }
+
+    // Render stops in the UI
+    function renderStops() {
+      const container = document.getElementById('stops-list-container');
+      container.innerHTML = '';
+      
+      if (stops.length > 0) {
+        const stopList = document.createElement('ul');
+        stopList.className = 'stop-list';
+        
+        // Sort stops by name
+        const sortedStops = [...stops].sort((a, b) => {
+          return a.human_name.localeCompare(b.human_name);
+        });
+        
+        sortedStops.forEach(stop => {
+          const stopItem = document.createElement('li');
+          stopItem.className = `stop-item ${selectedStop === stop.id ? 'active' : ''}`;
+          stopItem.dataset.id = stop.id;
+          
+          // Add label for stop
+          const displayName = stop.additional_name !== 'None' ? 
+            `${stop.human_name} - ${stop.additional_name}` : 
+            `${stop.human_name} (${stop.unique_name})`;
+          
+          stopItem.innerHTML = `
+            <span class="bus-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M3.5 11a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9Z"/>
+                <path d="M2.8 5.7a2 2 0 0 1 1.8-1.2h7.9a2 2 0 0 1 1.8 1.2l1.5 3.1a.5.5 0 0 1-.5.8h-1V10c0 .5-.4 1-1 1H3c-.5 0-1-.5-1-1V9.5H.7a.5.5 0 0 1-.5-.8l1.5-3c.3-.5.8-.8 1.1-1ZM12 10H4V6h8v4Z"/>
+              </svg>
+            </span>
+            ${displayName}
+          `;
+          
+          stopItem.addEventListener('click', () => {
+            selectStop(stop.id);
+          });
+          
+          stopList.appendChild(stopItem);
+        });
+        
+        container.appendChild(stopList);
+      } else {
+        container.innerHTML = '<div class="loading-container">No stops available</div>';
+      }
+    }
+
+    // Draw route lines on the map
+    function drawRouteLines() {
+      console.log('Drawing route lines');
+      
+      // Clear existing polylines
+      Object.values(routePolylines).forEach(polyline => {
+        polyline.remove();
+      });
+      
+      routePolylines = {};
+      
+      // For each route, create a polyline connecting all stops
+      routes.forEach(route => {
+        if (route.stops && route.stops.length > 0) {
+          const stopCoordinates = route.stops
+            .map(stopId => {
+              const stop = stops.find(s => s.id === stopId);
+              if (stop) {
+                return [
+                  parseFloat(stop.latitude),
+                  parseFloat(stop.longitude)
+                ];
+              }
+              return null;
+            })
+            .filter(coord => coord !== null);
+          
+          if (stopCoordinates.length > 1) {
+            const polyline = L.polyline(stopCoordinates, {
+              color: route.color || '#465436',
+              weight: 3,
+              opacity: 0.7
+            }).addTo(map);
+            
+            polyline.bindTooltip(route.name, {
+              sticky: true,
+              direction: 'auto'
+            });
+            
+            polyline.on('click', () => {
+              selectRoute(route.id);
+            });
+            
+            routePolylines[route.id] = polyline;
+          }
+        }
+      });
+    }
+
+    // Add stop markers to the map
+    function addStopMarkersToMap() {
+      console.log('Adding stop markers to map');
+      
+      // Clear existing markers
+      if (window.stopLayerGroup) {
+        window.stopLayerGroup.clearLayers();
+      } else {
+        window.stopLayerGroup = L.layerGroup().addTo(map);
+      }
+      
+      stopMarkers = {};
+      
+      stops.forEach(stop => {
+        const lat = parseFloat(stop.latitude);
+        const lng = parseFloat(stop.longitude);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          const marker = L.circleMarker([lat, lng], {
+            radius: 5,
+            fillColor: '#a13c2e',
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8
+          });
+          
+          marker.bindTooltip(`${stop.human_name} - ${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}`);
+          
+          marker.on('click', () => {
+            selectStop(stop.id);
+          });
+          
+          window.stopLayerGroup.addLayer(marker);
+          stopMarkers[stop.id] = marker;
+        }
+      });
+    }
+
+    // Update bus markers on the map
+    function updateBusMarkers(buses) {
+      console.log(`Updating ${buses.length} bus markers`);
+      
+      // Clear existing markers
+      Object.values(busMarkers).forEach(marker => {
+        marker.remove();
+      });
+      
+      busMarkers = {};
+      
+      // Add new markers
+      buses.forEach(bus => {
+        const lat = parseFloat(bus.latitude);
+        const lng = parseFloat(bus.longitude);
+        const heading = parseInt(bus.heading);
+        const routeId = bus.route;
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          // Find route to get color
+          const route = routes.find(r => r.id === routeId);
+          let color = '#465436'; // Default to Ann Arbor green if no route color
+          let routeName = 'Unknown Route';
+          
+          // If route exists and has a color, use it
+          if (route) {
+            color = route.color || color;
+            routeName = route.name;
+          }
+          
+          const busIcon = L.divIcon({
+            className: 'bus-marker',
+            html: `<div style="background-color: ${color}; transform: rotate(${heading}deg);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M3.5 11a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9Z"/>
+                      <path d="M2.8 5.7a2 2 0 0 1 1.8-1.2h7.9a2 2 0 0 1 1.8 1.2l1.5 3.1a.5.5 0 0 1-.5.8h-1V10c0 .5-.4 1-1 1H3c-.5 0-1-.5-1-1V9.5H.7a.5.5 0 0 1-.5-.8l1.5-3c.3-.5.8-.8 1.1-1ZM12 10H4V6h8v4Z"/>
+                    </svg>
+                  </div>`,
+            iconSize: [30, 30],
+          });
+          
+          const marker = L.marker([lat, lng], { icon: busIcon });
+          
+          // Create popup content
+          const direction = getHeadingDirection(heading);
+          
+          marker.bindPopup(`
+            <div class="bus-popup">
+              <div class="bus-popup-heading">Bus #${bus.id}</div>
+              <div class="bus-popup-info">
+                <span>Route: ${routeName}</span>
+                <span>Heading: ${direction}</span>
+                <span>Last updated: ${new Date().toLocaleTimeString()}</span>
+              </div>
+            </div>
+          `);
+          
+          // Add click handler to select the route of this bus
+          marker.on('click', () => {
+            if (route) {
+              selectRoute(route.id);
+            }
+          });
+          
+          marker.addTo(map);
+          busMarkers[bus.id] = marker;
+        }
+      });
+      
+      // Update the status display to show last refresh time
+      const refreshTime = new Date().toLocaleTimeString();
+      
+      // Create or update the refresh status element
+      let refreshStatus = document.querySelector('.refresh-status');
+      if (!refreshStatus) {
+        refreshStatus = document.createElement('div');
+        refreshStatus.className = 'refresh-status';
+        document.querySelector('.map-container').appendChild(refreshStatus);
+      }
+      
+      refreshStatus.style.position = 'absolute';
+      refreshStatus.style.bottom = '10px';
+      refreshStatus.style.right = '10px';
+      refreshStatus.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+      refreshStatus.style.padding = '5px 10px';
+      refreshStatus.style.borderRadius = '4px';
+      refreshStatus.style.fontSize = '12px';
+      refreshStatus.style.zIndex = '1000';
+      refreshStatus.innerHTML = `<strong>${buses.length} buses active</strong> • Updated: ${refreshTime}`;
+    }
+
+    // Convert heading degrees to cardinal direction
+    function getHeadingDirection(heading) {
+      const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const index = Math.round(heading / 45) % 8;
+      return directions[index];
+    }
+
+    // Select a route and update the UI
+    function selectRoute(routeId) {
+      selectedRoute = routeId;
+      selectedStop = null;
+      
+      console.log(`Selecting route: ${routeId}`);
+      
+      // Update route list UI
+      const routeItems = document.querySelectorAll('.route-item');
+      routeItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.id === routeId);
+      });
+      
+      // Update stop list UI
+      const stopItems = document.querySelectorAll('.stop-item');
+      stopItems.forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Find the selected route
+      const route = routes.find(r => r.id === routeId);
+      
+      if (route) {
+        // Highlight route polyline if it exists
+        Object.entries(routePolylines).forEach(([id, polyline]) => {
+          if (id === routeId) {
+            polyline.setStyle({
+              weight: 5,
+              opacity: 1
+            });
+          } else {
+            polyline.setStyle({
+              weight: 3,
+              opacity: 0.4
+            });
+          }
+        });
+        
+        // Get stops for this route
+        const routeStops = route.stops
+          .map(stopId => stops.find(s => s.id === stopId))
+          .filter(stop => stop !== undefined);
+        
+        // Center map on route
+        if (routeStops.length > 0) {
+          const bounds = routeStops.map(stop => [
+            parseFloat(stop.latitude),
+            parseFloat(stop.longitude)
+          ]);
+          
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+        
+        // Highlight stops for this route
+        if (window.stopLayerGroup) {
+          window.stopLayerGroup.eachLayer(layer => {
+            // Reset all stop markers
+            layer.setStyle({
+              radius: 5,
+              fillColor: '#a13c2e',
+              color: '#ffffff',
+              weight: 2,
+              opacity: 0.5,
+              fillOpacity: 0.5
+            });
+            
+            // Highlight stops on this route
+            const stopId = Object.keys(stopMarkers).find(key => stopMarkers[key] === layer);
+            if (stopId && route.stops.includes(stopId)) {
+              layer.setStyle({
+                radius: 7,
+                fillColor: route.color || '#a13c2e',
+                color: '#ffffff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 1
+              });
+            }
+          });
+        }
+      }
+    }
+
+    // Select a stop and show its details
+    async function selectStop(stopId) {
+      selectedStop = stopId;
+      selectedRoute = null;
+      
+      console.log(`Selecting stop: ${stopId}`);
+      
+      // Update stop list UI
+      const stopItems = document.querySelectorAll('.stop-item');
+      stopItems.forEach(item => {
+        item.classList.toggle('active', item.dataset.id === stopId);
+      });
+      
+      // Update route list UI
+      const routeItems = document.querySelectorAll('.route-item');
+      routeItems.forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Restore route polyline styles
+      Object.values(routePolylines).forEach(polyline => {
+        polyline.setStyle({
+          weight: 3,
+          opacity: 0.7
+        });
+      });
+      
+      // Find the selected stop
+      const stop = stops.find(s => s.id === stopId);
+      
+      if (stop) {
+        // Center map on stop
+        const lat = parseFloat(stop.latitude);
+        const lng = parseFloat(stop.longitude);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          map.setView([lat, lng], 17);
+          
+          // Highlight the stop marker
+          if (window.stopLayerGroup) {
+            window.stopLayerGroup.eachLayer(layer => {
+              // Reset all stop markers
+              layer.setStyle({
+                radius: 5,
+                fillColor: '#a13c2e',
+                color: '#ffffff',
+                weight: 2,
+                opacity: 0.5,
+                fillOpacity: 0.5
+              });
+            });
+            
+            // Highlight the selected stop
+            const marker = stopMarkers[stopId];
+            if (marker) {
+              marker.setStyle({
+                radius: 8,
+                fillColor: '#a13c2e',
+                color: '#ffffff',
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 1
+              });
+            }
+          }
+          
+          // Create or update stop marker popup
+          try {
+            // Show loading indicator in popup
+            if (stopMarkers[stopId]) {
+              stopMarkers[stopId].bindPopup(`
+                <div class="stop-details">
+                  <div class="stop-name">${stop.human_name}</div>
+                  <div>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}</div>
+                  <div class="loading-container" style="margin-top: 10px;">
+                    <div class="spinner"></div>
+                    <span>Loading arrivals...</span>
+                  </div>
+                </div>
+              `).openPopup();
+            }
+            
+            // Load arrivals for this stop
+            const arrivals = await loadArrivals(stopId);
+            
+            // Create popup content
+            let popupContent = `
+              <div class="stop-details">
+                <div class="stop-name">${stop.human_name}</div>
+                <div>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}</div>
+            `;
+            
+            // Add arrivals section
+            popupContent += `<div class="stop-arrivals">`;
+            
+            if (arrivals.length > 0) {
+              // Group arrivals by route
+              const routeArrivals = {};
+              arrivals.forEach(arrival => {
+                if (!routeArrivals[arrival.route_id]) {
+                  routeArrivals[arrival.route_id] = [];
+                }
+                routeArrivals[arrival.route_id].push(arrival);
+              });
+              
+              // Add arrival info for each route
+              Object.entries(routeArrivals).forEach(([routeId, routeArrivals]) => {
+                const route = routes.find(r => r.id === routeId);
+                const routeName = route ? route.name : `Route ${routeId}`;
+                const routeColor = route ? route.color : '#465436';
+                
+                popupContent += `
+                  <div class="arrival-item">
+                    <div class="route-name">
+                      <span class="route-color" style="background-color: ${routeColor}"></span>
+                      ${routeName}
+                    </div>
+                    <div class="arrival-times">
+                `;
+                
+                // Sort arrivals by time
+                routeArrivals.sort((a, b) => parseFloat(a.next) - parseFloat(b.next));
+                
+                // Add next arrival times (convert to minutes)
+                routeArrivals.slice(0, 2).forEach(arrival => {
+                  const minutes = Math.round(parseFloat(arrival.next) / 60);
+                  popupContent += `<div class="time-chip">${minutes} min</div>`;
+                });
+                
+                popupContent += `
+                    </div>
+                  </div>
+                `;
+              });
+            } else {
+              popupContent += `<div>No arrivals scheduled</div>`;
+            }
+            
+            popupContent += `
+                </div>
+              </div>
+            `;
+            
+            // Update popup with arrivals
+            if (stopMarkers[stopId]) {
+              stopMarkers[stopId].bindPopup(popupContent, { maxWidth: 300 }).openPopup();
+            }
+          } catch (error) {
+            console.error('Error loading arrivals:', error);
+            if (stopMarkers[stopId]) {
+              stopMarkers[stopId].bindPopup(`
+                <div class="stop-details">
+                  <div class="stop-name">${stop.human_name}</div>
+                  <div>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}</div>
+                  <div style="color: red; margin-top: 10px;">Error loading arrivals</div>
+                </div>
+              `, { maxWidth: 300 }).openPopup();
+            }
+          }
+        }
+      }
+    }
+
+    // Set up tab functionality
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Remove active class from all tabs and contents
+          tabs.forEach(t => t.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked tab and corresponding content
+          tab.classList.add('active');
+          document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+        });
+      });
+    }
+
+    // Set up refresh button
+    function setupRefreshButton() {
+      document.getElementById('refresh-btn').addEventListener('click', () => {
+        // Show loading animation in button
+        const refreshBtn = document.getElementById('refresh-btn');
+        const originalContent = refreshBtn.innerHTML;
+        refreshBtn.innerHTML = `
+          <div class="spinner" style="width: 16px; height: 16px;"></div>
+          <span>Refreshing...</span>
+        `;
+        refreshBtn.disabled = true;
+        
+        // Reload all data
+        Promise.all([
+          loadAnnouncements(),
+          loadRoutes(),
+          loadStops(),
+          loadBuses()
+        ]).then(() => {
+          // Restore button state
+          refreshBtn.innerHTML = originalContent;
+          refreshBtn.disabled = false;
+        }).catch(() => {
+          // Restore button state even on error
+          refreshBtn.innerHTML = originalContent;
+          refreshBtn.disabled = false;
+        });
+      });
+    }
+
+    // Set up search functionality
+    function setupSearchFields() {
+      document.getElementById('route-search').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        filterRoutes(searchTerm);
+      });
+      
+      document.getElementById('stop-search').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        filterStops(searchTerm);
+      });
+    }
+
+    // Filter routes based on search term
+    function filterRoutes(searchTerm) {
+      const routeItems = document.querySelectorAll('.route-item');
+      let visibleCount = 0;
+      
+      routeItems.forEach(item => {
+        const routeName = item.textContent.toLowerCase();
+        const visible = routeName.includes(searchTerm);
+        item.style.display = visible ? 'block' : 'none';
+        if (visible) visibleCount++;
+      });
+      
+      // Show message if no results
+      const container = document.getElementById('routes-list-container');
+      const noResults = container.querySelector('.no-results');
+      
+      if (visibleCount === 0) {
+        if (!noResults) {
+          const noResultsEl = document.createElement('div');
+          noResultsEl.className = 'no-results';
+          noResultsEl.textContent = `No routes found matching "${searchTerm}"`;
+          container.appendChild(noResultsEl);
+        }
+      } else {
+        if (noResults) {
+          noResults.remove();
+        }
+      }
+    }
+
+    // Filter stops based on search term
+    function filterStops(searchTerm) {
+      const stopItems = document.querySelectorAll('.stop-item');
+      let visibleCount = 0;
+      
+      stopItems.forEach(item => {
+        const stopName = item.textContent.toLowerCase();
+        const visible = stopName.includes(searchTerm);
+        item.style.display = visible ? 'block' : 'none';
+        if (visible) visibleCount++;
+      });
+      
+      // Show message if no results
+      const container = document.getElementById('stops-list-container');
+      const noResults = container.querySelector('.no-results');
+      
+      if (visibleCount === 0) {
+        if (!noResults) {
+          const noResultsEl = document.createElement('div');
+          noResultsEl.className = 'no-results';
+          noResultsEl.textContent = `No stops found matching "${searchTerm}"`;
+          container.appendChild(noResultsEl);
+        }
+      } else {
+        if (noResults) {
+          noResults.remove();
+        }
+      }
+    }
+
+    // Show error message
+    function showError(message) {
+      const container = document.getElementById('error-container');
+      
+      // Create error element if it doesn't exist
+      if (!container.querySelector('.error-message')) {
+        const errorEl = document.createElement('div');
+        errorEl.className = 'error-message';
+        errorEl.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+          </svg>
+          <span>${message}</span>
+        `;
+        
+        container.appendChild(errorEl);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          errorEl.remove();
+        }, 5000);
+      }
+    }
+
+    // Show loading indicator
+    function showLoading(containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = `
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <span>Loading...</span>
+        </div>
+      `;
+    }
+
+    // Hide loading indicator
+    function hideLoading(containerId) {
+      const container = document.getElementById(containerId);
+      const loading = container.querySelector('.loading-container');
+      if (loading) {
+        loading.remove();
+      }
+    }
+
+    // Bind events after the document is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize app with core features
+      console.log('Initializing Ann Arbor Bus Tracker');
+      initMap();
+      setupTabs();
+      setupRefreshButton();
+      setupSearchFields();
+      
+      // Hide loading status once map is initialized
+      document.getElementById('loading-status').style.display = 'none';
+      
+      // Load initial data
+      loadData();
+      
+      // Set up auto-refresh
+      busRefreshInterval = setInterval(() => {
+        loadBuses();
+        loadAnnouncements();
+      }, 30000); // Refresh every 30 seconds
+      
+      // Add event listeners for window resize
+      window.addEventListener('resize', () => {
+        // Adjust layout for mobile devices
+        if (window.innerWidth <= 768) {
+          document.querySelector('.main-container').style.flexDirection = 'column';
+          document.querySelector('.sidebar').style.width = '100%';
+          document.querySelector('.map-container').style.height = '400px';
+        } else {
+          document.querySelector('.main-container').style.flexDirection = 'row';
+          document.querySelector('.sidebar').style.width = '300px';
+          document.querySelector('.map-container').style.height = 'calc(100vh - 76px)';
+        }
+      });
+    });
+  </script>
+</body>
+</html>  // Add custom CSS classes
+  const customStyles = document.createElement('style');
+  customStyles.textContent = `
+    .no-results {
+      padding: 1rem;
+      text-align: center;
+      color: var(--medium-gray);
+      font-style: italic;
+    }
+    
+    .bus-popup {
+      min-width: 200px;
+    }
+    
+    .bus-popup-heading {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 5px;
+      color: var(--ann-arbor-green);
+    }
+    
+    .bus-popup-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .arrival-times {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .time-chip {
+      background-color: var(--ann-arbor-teal);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+    }
+    
+    .leaflet-popup-content {
+      margin: 12px 12px;
+      line-height: 1.5;
+    }
+    
+    .refresh-status {
+      background-color: rgba(255, 255, 255, 0.9) !important;
+      padding: 5px 10px !important;
+      border-radius: 4px !important;
+      font-size: 12px !important;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+      border: 1px solid #ccc !important;
+    }
+    
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .header-actions {
+        width: 100%;
+      }
+      
+      .refresh-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  `;
+  document.head.appendChild(customStyles);  // Filter routes based on search term
+  function filterRoutes(searchTerm) {
+    const routeItems = document.querySelectorAll('.route-item');
+    let visibleCount = 0;
+    
+    routeItems.forEach(item => {
+      const routeName = item.textContent.toLowerCase();
+      const visible = routeName.includes(searchTerm);
+      item.style.display = visible ? 'block' : 'none';
+      if (visible) visibleCount++;
+    });
+    
+    // Show message if no results
+    const container = document.getElementById('routes-list-container');
+    const noResults = container.querySelector('.no-results');
+    
+    if (visibleCount === 0) {
+      if (!noResults) {
+        const noResultsEl = document.createElement('div');
+        noResultsEl.className = 'no-results';
+        noResultsEl.textContent = `No routes found matching "${searchTerm}"`;
+        container.appendChild(noResultsEl);
+      }
+    } else {
+      if (noResults) {
+        noResults.remove();
+      }
+    }
+  }
+
+  // Filter stops based on search term
+  function filterStops(searchTerm) {
+    const stopItems = document.querySelectorAll('.stop-item');
+    let visibleCount = 0;
+    
+    stopItems.forEach(item => {
+      const stopName = item.textContent.toLowerCase();
+      const visible = stopName.includes(searchTerm);
+      item.style.display = visible ? 'block' : 'none';
+      if (visible) visibleCount++;
+    });
+    
+    // Show message if no results
+    const container = document.getElementById('stops-list-container');
+    const noResults = container.querySelector('.no-results');
+    
+    if (visibleCount === 0) {
+      if (!noResults) {
+        const noResultsEl = document.createElement('div');
+        noResultsEl.className = 'no-results';
+        noResultsEl.textContent = `No stops found matching "${searchTerm}"`;
+        container.appendChild(noResultsEl);
+      }
+    } else {
+      if (noResults) {
+        noResults.remove();
+      }
+    }
+  }  // Draw route lines on the map
+  function drawRouteLines() {
+    console.log('Drawing route lines');
+    
+    // Clear existing polylines
+    Object.values(routePolylines).forEach(polyline => {
+      polyline.remove();
+    });
+    
+    routePolylines = {};
+    
+    // For each route, create a polyline connecting all stops
+    routes.forEach(route => {
+      if (route.stops && route.stops.length > 0) {
+        const stopCoordinates = route.stops
+          .map(stopId => {
+            const stop = stops.find(s => s.id === stopId);
+            if (stop) {
+              return [
+                parseFloat(stop.latitude),
+                parseFloat(stop.longitude)
+              ];
+            }
+            return null;
+          })
+          .filter(coord => coord !== null);
+        
+        if (stopCoordinates.length > 1) {
+          const polyline = L.polyline(stopCoordinates, {
+            color: route.color || '#465436',
+            weight: 3,
+            opacity: 0.7
+          }).addTo(map);
+          
+          polyline.bindTooltip(route.name, {
+            sticky: true,
+            direction: 'auto'
+          });
+          
+          polyline.on('click', () => {
+            selectRoute(route.id);
+          });
+          
+          routePolylines[route.id] = polyline;
+        }
+      }
+    });
+  }
+
+  // Add stop markers to the map
+  function addStopMarkersToMap() {
+    console.log('Adding stop markers to map');
+    
+    // Clear existing markers
+    if (window.stopLayerGroup) {
+      window.stopLayerGroup.clearLayers();
+    } else {
+      window.stopLayerGroup = L.layerGroup().addTo(map);
+    }
+    
+    stopMarkers = {};
+    
+    stops.forEach(stop => {
+      const lat = parseFloat(stop.latitude);
+      const lng = parseFloat(stop.longitude);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const marker = L.circleMarker([lat, lng], {
+          radius: 5,
+          fillColor: '#a13c2e',
+          color: '#ffffff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
+        });
+        
+        marker.bindTooltip(`${stop.human_name} - ${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}`);
+        
+        marker.on('click', () => {
+          selectStop(stop.id);
+        });
+        
+        window.stopLayerGroup.addLayer(marker);
+        stopMarkers[stop.id] = marker;
+      }
+    });
+  }<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ann Arbor Bus Tracker - TheRide</title>
+  <meta name="description" content="Real-time bus tracking for Ann Arbor, Michigan. Find buses, routes, and arrival times for TheRide.">
+  <link rel="shortcut icon" href="https://www.theride.org/themes/custom/bootstrap_sass/favicon.ico" type="image/x-icon">"
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <style>
+    :root {
+      /* Ann Arbor theme colors */
+      --ann-arbor-green: #465436;
+      --ann-arbor-teal: #4a746a;
+      --ann-arbor-brick: #a13c2e;
+      --ann-arbor-gold: #d6bb7a;
+      --ann-arbor-tan: #e6e2d3;
+      --light-gray: #f2f2f2;
+      --dark-gray: #333;
+      --medium-gray: #6c757d;
+      --white: #ffffff;
+      --accent-blue: #3a7ca5;
+      --success-green: #28a745;
+      --warning-orange: #fd7e14;
+      --danger-red: #dc3545;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Open Sans', sans-serif;
+      line-height: 1.6;
+      color: var(--dark-gray);
+      background-color: var(--light-gray);
+    }
+    
+    header {
+      background-color: var(--ann-arbor-green);
+      color: var(--white);
+      padding: 1rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 1000;
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo img {
+      height: 40px;
+    }
+    
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .refresh-btn {
+      background-color: var(--ann-arbor-brick);
+      color: var(--white);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s;
+    }
+    
+    .refresh-btn:hover {
+      background-color: #8a3226;
+    }
+    
+    .main-container {
+      display: flex;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+      gap: 1rem;
+      height: calc(100vh - 76px);
+    }
+    
+    .sidebar {
+      width: 300px;
+      background-color: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .map-container {
+      flex: 1;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    
+    .tab-container {
+      display: flex;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      background-color: var(--white);
+      transition: background-color 0.2s;
+    }
+    
+    .tab.active {
+      background-color: var(--ann-arbor-teal);
+      color: var(--white);
+    }
+    
+    .tab:hover:not(.active) {
+      background-color: var(--light-gray);
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 1rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .search-container {
+      margin-bottom: 1rem;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    
+    .route-list, .stop-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .route-item, .stop-item {
+      padding: 0.75rem;
+      border-radius: 4px;
+      background-color: var(--light-gray);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border-left: 4px solid transparent;
+    }
+    
+    .route-item:hover, .stop-item:hover {
+      background-color: #e9e9e9;
+    }
+    
+    .route-item.active, .stop-item.active {
+      border-left-color: var(--ann-arbor-gold);
+      background-color: var(--ann-arbor-tan);
+    }
+    
+    .route-color {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    
+    .arrival-time {
+      font-weight: 600;
+      color: var(--accent-blue);
+    }
+    
+    .announcement-container {
+      background-color: var(--ann-arbor-gold);
+      color: var(--ann-arbor-green);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .announcement-icon {
+      font-size: 1.2rem;
+    }
+    
+    .bus-icon {
+      color: var(--ann-arbor-teal);
+      font-size: 1.2rem;
+      margin-right: 0.5rem;
+    }
+    
+    .status-indicator {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    
+    .status-active {
+      background-color: var(--success-green);
+      color: var(--white);
+    }
+    
+    .status-inactive {
+      background-color: var(--medium-gray);
+      color: var(--white);
+    }
+    
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background-color: rgba(74, 116, 106, 0.1);
+      border-radius: 4px;
+      border-left: 4px solid var(--ann-arbor-teal);
+    }
+    
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top: 4px solid var(--ann-arbor-teal);
       width: 24px;
       height: 24px;
       margin-right: 1rem;
@@ -325,7 +2022,7 @@
       width: 30px;
       height: 30px;
       border-radius: 50%;
-      background-color: var(--michigan-blue);
+      background-color: var(--ann-arbor-green);
       color: var(--white);
       font-weight: 600;
       border: 2px solid var(--white);
@@ -353,6 +2050,14 @@
       border-radius: 4px;
       margin-bottom: 1rem;
       text-align: center;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .error-message svg {
+      flex-shrink: 0;
     }
     
     @media (max-width: 768px) {
@@ -378,14 +2083,14 @@
     <div class="header-content">
       <div class="logo">
         <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="4" fill="#FFCB05"/>
-          <path d="M8 12C8 10.8954 8.89543 10 10 10H30C31.1046 10 32 10.8954 32 12V28C32 29.1046 31.1046 30 30 30H10C8.89543 30 8 29.1046 8 28V12Z" fill="#00274C"/>
-          <path d="M12 18C12 16.8954 12.8954 16 14 16H26C27.1046 16 28 16.8954 28 18V28H12V18Z" fill="#FFCB05"/>
+          <rect width="40" height="40" rx="4" fill="#465436"/>
+          <path d="M8 12C8 10.8954 8.89543 10 10 10H30C31.1046 10 32 10.8954 32 12V28C32 29.1046 31.1046 30 30 30H10C8.89543 30 8 29.1046 8 28V12Z" fill="#4a746a"/>
+          <path d="M12 18C12 16.8954 12.8954 16 14 16H26C27.1046 16 28 16.8954 28 18V28H12V18Z" fill="#d6bb7a"/>
           <circle cx="15" cy="26" r="1.5" fill="#00274C"/>
           <circle cx="25" cy="26" r="1.5" fill="#00274C"/>
           <rect x="18" y="20" width="4" height="4" rx="1" fill="#00274C"/>
         </svg>
-        <h1>U-M Bus Tracker</h1>
+        <h1>Ann Arbor Bus Tracker</h1>
       </div>
       <div class="header-actions">
         <button id="refresh-btn" class="refresh-btn">
@@ -408,7 +2113,14 @@
       
       <div id="announcements"></div>
       
-      <div id="error-container"></div>
+      <div id="error-container">
+        <!-- Error messages will appear here -->
+      </div>
+      
+      <div id="loading-status" class="loading-container">
+        <div class="spinner"></div>
+        <span>Connecting to TheRide API...</span>
+      </div>
       
       <div id="routes-tab" class="tab-content active">
         <div class="search-container">
@@ -431,295 +2143,529 @@
   </div>
 
   <script>
-    // API Configuration
-    const API_BASE_URL = 'http://mbus.pts.umich.edu/api/v0';
-    const API_KEY = 'XXcFMTXidWRLjqVR9Aw8p4sXr';
+  const apiBase = 'http://mbus.pts.umich.edu/api/v0';
+  const apiKey = 'XXcFMTXidWRLjqVR9Aw8p4sXr';
 
-    // Initialize variables
-    let map;
-    let busMarkers = {};
-    let routePolylines = {};
-    let selectedRoute = null;
-    let selectedStop = null;
-    let routes = [];
-    let stops = [];
-    let announcements = [];
-
-    // Initialize the application
-    document.addEventListener('DOMContentLoaded', () => {
-      initMap();
-      setupTabs();
-      setupRefreshButton();
-      setupSearchFields();
+  // Ensure API key is passed in requests if needed
+  async function fetchApi(endpoint) {
+    try {
+      const url = `${apiBase}/${endpoint}`;
+      console.log(`Fetching data from: ${url}`);
       
-      // Load initial data
-      loadAnnouncements();
-      loadRoutes();
-      loadStops();
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Error fetching from ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  // Initialize variables
+  let map;
+  let busMarkers = {};
+  let routePolylines = {};
+  let stopMarkers = {};
+  let selectedRoute = null;
+  let selectedStop = null;
+  let routes = [];
+  let stops = [];
+  let announcements = [];
+  let busRefreshInterval;
+  
+  // Bind events after the document is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    // Favicon & title
+    document.title = "Ann Arbor Bus Tracker";
+    
+    // Add bus tracking tips
+    const sidebarContainer = document.querySelector('.sidebar');
+    if (sidebarContainer) {
+      const tipsContainer = document.createElement('div');
+      tipsContainer.className = 'tips-container';
+      tipsContainer.style.padding = '1rem';
+      tipsContainer.style.borderTop = '1px solid #e0e0e0';
+      tipsContainer.style.marginTop = 'auto';
+      tipsContainer.style.fontSize = '0.9rem';
+      tipsContainer.style.color = '#666';
+      tipsContainer.innerHTML = `
+        <h3 style="margin-top: 0; color: var(--ann-arbor-green);">Tips</h3>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+          <li>Click on a route to see its path</li>
+          <li>Click on a stop to see arrival times</li>
+          <li>Active buses are shown in real-time</li>
+          <li>Search for specific routes or stops</li>
+        </ul>
+      `;
+      
+      sidebarContainer.appendChild(tipsContainer);
+    }
+    
+    // Initialize app with core features
+    console.log('Initializing Ann Arbor Bus Tracker');
+    initMap();
+    setupTabs();
+    setupRefreshButton();
+    setupSearchFields();
+    
+    // Hide loading status once map is initialized
+    document.getElementById('loading-status').style.display = 'none';
+    
+    // Load initial data
+    loadData();
+    
+    // Set up auto-refresh
+    busRefreshInterval = setInterval(() => {
       loadBuses();
-      
-      // Set up auto-refresh
-      setInterval(() => {
-        loadBuses();
-        loadAnnouncements();
-      }, 30000); // Refresh every 30 seconds
+      loadAnnouncements();
+    }, 30000); // Refresh every 30 seconds
+    
+    // Add event listeners for window resize
+    window.addEventListener('resize', () => {
+      // Adjust layout for mobile devices
+      if (window.innerWidth <= 768) {
+        document.querySelector('.main-container').style.flexDirection = 'column';
+        document.querySelector('.sidebar').style.width = '100%';
+        document.querySelector('.map-container').style.height = '400px';
+      } else {
+        document.querySelector('.main-container').style.flexDirection = 'row';
+        document.querySelector('.sidebar').style.width = '300px';
+        document.querySelector('.map-container').style.height = 'calc(100vh - 76px)';
+      }
     });
+  });
+
+  // Initial data loading
+  async function loadData() {
+    try {
+      // Load data in parallel
+      await Promise.all([
+        loadAnnouncements(),
+        loadRoutes(),
+        loadStops()
+      ]);
+      
+      // Once routes and stops are loaded, load buses
+      await loadBuses();
+    } catch (error) {
+      console.error('Error during initial data loading:', error);
+      showError('Failed to load data. Please try again later.');
+    }
+  }
 
     // Initialize the map
     function initMap() {
-      map = L.map('map').setView([42.2808, -83.7430], 15); // Centered on U-M Central Campus
+      map = L.map('map').setView([42.2808, -83.7430], 15); // Centered on Ann Arbor
       
+      // Use OpenStreetMap tiles with proper attribution
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
-    }
-
-    // Set up tab functionality
-    function setupTabs() {
-      const tabs = document.querySelectorAll('.tab');
-      const tabContents = document.querySelectorAll('.tab-content');
       
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          // Remove active class from all tabs and contents
-          tabs.forEach(t => t.classList.remove('active'));
-          tabContents.forEach(c => c.classList.remove('active'));
-          
-          // Add active class to clicked tab and corresponding content
-          tab.classList.add('active');
-          document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-        });
-      });
+      // Add map scale
+      L.control.scale().addTo(map);
     }
 
-    // Set up refresh button
-    function setupRefreshButton() {
-      document.getElementById('refresh-btn').addEventListener('click', () => {
-        loadBuses();
-        loadAnnouncements();
-        loadRoutes();
-        loadStops();
-      });
-    }
-
-    // Set up search functionality
-    function setupSearchFields() {
-      document.getElementById('route-search').addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        filterRoutes(searchTerm);
-      });
-      
-      document.getElementById('stop-search').addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        filterStops(searchTerm);
-      });
-    }
-
-    // Load announcements from the API
-    function loadAnnouncements() {
-      fetch(`${API_BASE_URL}/announcements/`)
-        .then(response => response.json())
-        .then(data => {
-          announcements = data.response;
-          renderAnnouncements();
-        })
-        .catch(error => {
-          console.error('Error loading announcements:', error);
-          showError('Failed to load announcements. Please try again later.');
-        });
-    }
-
-    // Load routes from the API
-    function loadRoutes() {
-      showLoading('routes-list-container');
-      
-      fetch(`${API_BASE_URL}/routes/`)
-        .then(response => response.json())
-        .then(data => {
-          routes = data.response;
-          renderRoutes();
-          hideLoading('routes-list-container');
-        })
-        .catch(error => {
-          console.error('Error loading routes:', error);
-          showError('Failed to load routes. Please try again later.');
-          hideLoading('routes-list-container');
-        });
-    }
-
-    // Load stops from the API
-    function loadStops() {
-      showLoading('stops-list-container');
-      
-      fetch(`${API_BASE_URL}/stops/`)
-        .then(response => response.json())
-        .then(data => {
-          stops = data.response;
-          renderStops();
-          hideLoading('stops-list-container');
-        })
-        .catch(error => {
-          console.error('Error loading stops:', error);
-          showError('Failed to load stops. Please try again later.');
-          hideLoading('stops-list-container');
-        });
-    }
-
-    // Load buses from the API
-    function loadBuses() {
-      fetch(`${API_BASE_URL}/buses/`)
-        .then(response => response.json())
-        .then(data => {
-          updateBusMarkers(data.response);
-        })
-        .catch(error => {
-          console.error('Error loading buses:', error);
-          showError('Failed to load bus data. Please try again later.');
-        });
-    }
-
-    // Load arrivals for a specific stop
-    function loadArrivals(stopId) {
-      return fetch(`${API_BASE_URL}/arrivals/`)
-        .then(response => response.json())
-        .then(data => {
-          const stopArrivals = data.response.find(item => item.stop_id === stopId);
-          return stopArrivals ? stopArrivals.arrivals : [];
-        })
-        .catch(error => {
-          console.error('Error loading arrivals:', error);
-          return [];
-        });
-    }
-
-    // Render announcements in the UI
-    function renderAnnouncements() {
-      const container = document.getElementById('announcements');
-      container.innerHTML = '';
-      
-      if (announcements.length > 0) {
-        announcements.forEach(announcement => {
-          const announcementEl = document.createElement('div');
-          announcementEl.className = 'announcement-container';
-          announcementEl.style.backgroundColor = announcement.color || '#ffcb05';
-          
-          announcementEl.innerHTML = `
-            <span class="announcement-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-              </svg>
-            </span>
-            <span>${announcement.text}</span>
-          `;
-          
-          container.appendChild(announcementEl);
-        });
-      }
-    }
-
-    // Render routes in the UI
-    function renderRoutes() {
-      const container = document.getElementById('routes-list-container');
-      container.innerHTML = '';
-      
-      if (routes.length > 0) {
-        const routeList = document.createElement('ul');
-        routeList.className = 'route-list';
+  // Set up tab functionality
+  function setupTabs() {
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
         
-        routes.forEach(route => {
-          const routeItem = document.createElement('li');
-          routeItem.className = `route-item ${selectedRoute === route.id ? 'active' : ''}`;
-          routeItem.dataset.id = route.id;
-          
-          const statusClass = route.is_active ? 'status-active' : 'status-inactive';
-          const statusText = route.is_active ? 'Active' : 'Inactive';
-          
-          routeItem.innerHTML = `
-            <span class="route-color" style="background-color: ${route.color}"></span>
-            ${route.name}
-            <span class="status-indicator ${statusClass}">${statusText}</span>
-          `;
-          
-          routeItem.addEventListener('click', () => {
-            selectRoute(route.id);
-          });
-          
-          routeList.appendChild(routeItem);
-        });
-        
-        container.appendChild(routeList);
-      } else {
-        container.innerHTML = '<div class="loading">No routes available</div>';
-      }
-    }
+        // Add active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+  }
 
-    // Render stops in the UI
-    function renderStops() {
-      const container = document.getElementById('stops-list-container');
-      container.innerHTML = '';
+  // Set up refresh button
+  function setupRefreshButton() {
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      // Show loading animation in button
+      const refreshBtn = document.getElementById('refresh-btn');
+      const originalContent = refreshBtn.innerHTML;
+      refreshBtn.innerHTML = `
+        <div class="spinner" style="width: 16px; height: 16px;"></div>
+        <span>Refreshing...</span>
+      `;
+      refreshBtn.disabled = true;
+      
+      // Reload all data
+      Promise.all([
+        loadAnnouncements(),
+        loadRoutes(),
+        loadStops(),
+        loadBuses()
+      ]).then(() => {
+        // Restore button state
+        refreshBtn.innerHTML = originalContent;
+        refreshBtn.disabled = false;
+      }).catch(() => {
+        // Restore button state even on error
+        refreshBtn.innerHTML = originalContent;
+        refreshBtn.disabled = false;
+      });
+    });
+  }
+
+  // Set up search functionality
+  function setupSearchFields() {
+    document.getElementById('route-search').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      filterRoutes(searchTerm);
+    });
+    
+    document.getElementById('stop-search').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      filterStops(searchTerm);
+    });
+  }
+
+  // Load announcements from the API
+  async function loadAnnouncements() {
+    try {
+      const data = await fetchApi('announcements/');
+      console.log('Announcements data:', data);
+      
+      announcements = data.response || [];
+      renderAnnouncements();
+      return announcements;
+    } catch (error) {
+      console.error('Error loading announcements:', error);
+      showError('Failed to load announcements. Please check your connection.');
+      return [];
+    }
+  }
+
+  // Load routes from the API
+  async function loadRoutes() {
+    showLoading('routes-list-container');
+    
+    try {
+      const data = await fetchApi('routes/');
+      console.log('Routes data:', data);
+      
+      routes = data.response || [];
+      renderRoutes();
       
       if (stops.length > 0) {
-        const stopList = document.createElement('ul');
-        stopList.className = 'stop-list';
-        
-        stops.forEach(stop => {
-          const stopItem = document.createElement('li');
-          stopItem.className = `stop-item ${selectedStop === stop.id ? 'active' : ''}`;
-          stopItem.dataset.id = stop.id;
-          
-          stopItem.innerHTML = `
-            <span class="bus-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M3.5 11a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9Z"/>
-                <path d="M2.8 5.7a2 2 0 0 1 1.8-1.2h7.9a2 2 0 0 1 1.8 1.2l1.5 3.1a.5.5 0 0 1-.5.8h-1V10c0 .5-.4 1-1 1H3c-.5 0-1-.5-1-1V9.5H.7a.5.5 0 0 1-.5-.8l1.5-3c.3-.5.8-.8 1.1-1ZM12 10H4V6h8v4Z"/>
-              </svg>
-            </span>
-            ${stop.human_name} - ${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}
-          `;
-          
-          stopItem.addEventListener('click', () => {
-            selectStop(stop.id);
-          });
-          
-          stopList.appendChild(stopItem);
-        });
-        
-        container.appendChild(stopList);
-      } else {
-        container.innerHTML = '<div class="loading">No stops available</div>';
+        // Only draw route lines if stops are loaded
+        drawRouteLines();
       }
+      
+      hideLoading('routes-list-container');
+      return routes;
+    } catch (error) {
+      console.error('Error loading routes:', error);
+      showError('Failed to load routes. Please try again later.');
+      hideLoading('routes-list-container');
+      return [];
     }
+  }
 
-    // Update bus markers on the map
-    function updateBusMarkers(buses) {
-      // Clear existing markers
-      Object.values(busMarkers).forEach(marker => {
-        marker.remove();
+  // Load stops from the API
+  async function loadStops() {
+    showLoading('stops-list-container');
+    
+    try {
+      const data = await fetchApi('stops/');
+      console.log('Stops data:', data);
+      
+      stops = data.response || [];
+      renderStops();
+      
+      if (stops.length > 0) {
+        addStopMarkersToMap();
+      }
+      
+      hideLoading('stops-list-container');
+      return stops;
+    } catch (error) {
+      console.error('Error loading stops:', error);
+      showError('Failed to load stops. Please try again later.');
+      hideLoading('stops-list-container');
+      return [];
+    }
+  }
+
+  // Load buses from the API
+  async function loadBuses() {
+    try {
+      const data = await fetchApi('buses/');
+      console.log('Buses data:', data);
+      
+      const buses = data.response || [];
+      updateBusMarkers(buses);
+      return buses;
+    } catch (error) {
+      console.error('Error loading buses:', error);
+      showError('Failed to load bus data. Please try again later.');
+      return [];
+    }
+  }
+
+  // Load arrivals for a specific stop
+  async function loadArrivals(stopId) {
+    try {
+      const data = await fetchApi('arrivals/');
+      console.log('Arrivals data:', data);
+      
+      const stopArrivals = (data.response || []).find(item => item.stop_id === stopId);
+      return stopArrivals ? stopArrivals.arrivals : [];
+    } catch (error) {
+      console.error('Error loading arrivals:', error);
+      return [];
+    }
+  }
+
+  // Render announcements in the UI
+  function renderAnnouncements() {
+    const container = document.getElementById('announcements');
+    container.innerHTML = '';
+    
+    if (announcements.length > 0) {
+      announcements.forEach(announcement => {
+        const announcementEl = document.createElement('div');
+        announcementEl.className = 'announcement-container';
+        announcementEl.style.backgroundColor = announcement.color || '#d6bb7a';
+        announcementEl.style.color = getContrastColor(announcement.color);
+        
+        announcementEl.innerHTML = `
+          <span class="announcement-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+            </svg>
+          </span>
+          <span>${announcement.text}</span>
+        `;
+        
+        container.appendChild(announcementEl);
+      });
+    }
+  }
+  
+  // Get contrasting text color based on background
+  function getContrastColor(hexColor) {
+    // Default to dark text
+    if (!hexColor) return '#333333';
+    
+    // Convert hex to RGB
+    let r = 0, g = 0, b = 0;
+    
+    // 3 digits
+    if (hexColor.length === 4) {
+      r = parseInt(hexColor[1] + hexColor[1], 16);
+      g = parseInt(hexColor[2] + hexColor[2], 16);
+      b = parseInt(hexColor[3] + hexColor[3], 16);
+    } 
+    // 6 digits
+    else if (hexColor.length === 7) {
+      r = parseInt(hexColor.slice(1, 3), 16);
+      g = parseInt(hexColor.slice(3, 5), 16);
+      b = parseInt(hexColor.slice(5, 7), 16);
+    }
+    
+    // Calculate brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
+    const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+    
+    // Return white for dark colors, black for light colors
+    return brightness < 128 ? '#ffffff' : '#333333';
+  }
+
+  // Render routes in the UI
+  function renderRoutes() {
+    const container = document.getElementById('routes-list-container');
+    container.innerHTML = '';
+    
+    if (routes.length > 0) {
+      const routeList = document.createElement('ul');
+      routeList.className = 'route-list';
+      
+      // Sort routes: active first, then by name
+      const sortedRoutes = [...routes].sort((a, b) => {
+        // First sort by active status
+        if (a.is_active !== b.is_active) {
+          return b.is_active - a.is_active; // Active routes first
+        }
+        // Then sort by name
+        return a.name.localeCompare(b.name);
       });
       
-      busMarkers = {};
-      
-      // Add new markers
-      buses.forEach(bus => {
-        const lat = parseFloat(bus.latitude);
-        const lng = parseFloat(bus.longitude);
-        const heading = parseInt(bus.heading);
-        const routeId = bus.route;
+      sortedRoutes.forEach(route => {
+        const routeItem = document.createElement('li');
+        routeItem.className = `route-item ${selectedRoute === route.id ? 'active' : ''}`;
+        routeItem.dataset.id = route.id;
         
-        if (!isNaN(lat) && !isNaN(lng)) {
-          const route = routes.find(r => r.id === routeId);
-          const color = route ? route.color : '#00274c';
-          
-          const busIcon = L.divIcon({
-            className: 'bus-marker',
-            html: `<div style="background-color: ${color}; transform: rotate(${heading}deg);">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="M3.5 11a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9Z"/>
-                      <path d="M2.8 5.7a2 2 0 0 1 1.8-1.2h7.9a2 2 0 0 1 1.8 1.2l1.5 3.1a.5.5 0 0 1-.5.8h-1V10c0 .5-.4 1-1 1H3c-.5 0-1-.5-1-1V9.5H.7a.5.5 0 0 1-.5-.8l1.5-3c.3-.5.8-.8 1.1-1ZM12 10H4V6h8v4Z"/>
-                    </svg>
-                  </div>`,
-            iconSize: [30, 30],
+        const statusClass = route.is_active ? 'status-active' : 'status-inactive';
+        const statusText = route.is_active ? 'Active' : 'Inactive';
+        
+        routeItem.innerHTML = `
+          <span class="route-color" style="background-color: ${route.color}"></span>
+          ${route.name}
+          <span class="status-indicator ${statusClass}">${statusText}</span>
+        `;
+        
+        routeItem.addEventListener('click', () => {
+          selectRoute(route.id);
+        });
+        
+        routeList.appendChild(routeItem);
+      });
+      
+      container.appendChild(routeList);
+    } else {
+      container.innerHTML = '<div class="loading-container">No routes available</div>';
+    }
+  }
+
+  // Render stops in the UI
+  function renderStops() {
+    const container = document.getElementById('stops-list-container');
+    container.innerHTML = '';
+    
+    if (stops.length > 0) {
+      const stopList = document.createElement('ul');
+      stopList.className = 'stop-list';
+      
+      // Sort stops by name
+      const sortedStops = [...stops].sort((a, b) => {
+        return a.human_name.localeCompare(b.human_name);
+      });
+      
+      sortedStops.forEach(stop => {
+        const stopItem = document.createElement('li');
+        stopItem.className = `stop-item ${selectedStop === stop.id ? 'active' : ''}`;
+        stopItem.dataset.id = stop.id;
+        
+        // Add label for stop
+        const displayName = stop.additional_name !== 'None' ? 
+          `${stop.human_name} - ${stop.additional_name}` : 
+          `${stop.human_name} (${stop.unique_name})`;
+        
+        stopItem.innerHTML = `
+          <span class="bus-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M3.5 11a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9Z"/>
+              <path d="M2.8 5.7a2 2 0 0 1 1.8-1.2h7.9a2 2 0 0 1 1.8 1.2l1.5 3.1a.5.5 0 0 1-.5.8h-1V10c0 .5-.4 1-1 1H3c-.5 0-1-.5-1-1V9.5H.7a.5.5 0 0 1-.5-.8l1.5-3c.3-.5.8-.8 1.1-1ZM12 10H4V6h8v4Z"/>
+            </svg>
+          </span>
+          ${displayName}
+        `;
+        
+        stopItem.addEventListener('click', () => {
+          selectStop(stop.id);
+        });
+        
+        stopList.appendChild(stopItem);
+      });
+      
+      container.appendChild(stopList);
+    } else {
+      container.innerHTML = '<div class="loading-container">No stops available</div>';
+    }
+  }
+
+  // Update bus markers on the map
+  function updateBusMarkers(buses) {
+    console.log(`Updating ${buses.length} bus markers`);
+    
+    // Clear existing markers
+    Object.values(busMarkers).forEach(marker => {
+      marker.remove();
+    });
+    
+    busMarkers = {};
+    
+    // Add new markers
+    buses.forEach(bus => {
+      const lat = parseFloat(bus.latitude);
+      const lng = parseFloat(bus.longitude);
+      const heading = parseInt(bus.heading);
+      const routeId = bus.route;
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        // Find route to get color
+        const route = routes.find(r => r.id === routeId);
+        let color = '#465436'; // Default to Ann Arbor green if no route color
+        let routeName = 'Unknown Route';
+        
+        // If route exists and has a color, use it
+        if (route) {
+          color = route.color || color;
+          routeName = route.name;
+        }
+        
+        const busIcon = L.divIcon({
+          className: 'bus-marker',
+          html: `<div style="background-color: ${color}; transform: rotate(${heading}deg);">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M3.5 11a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9Z"/>
+                    <path d="M2.8 5.7a2 2 0 0 1 1.8-1.2h7.9a2 2 0 0 1 1.8 1.2l1.5 3.1a.5.5 0 0 1-.5.8h-1V10c0 .5-.4 1-1 1H3c-.5 0-1-.5-1-1V9.5H.7a.5.5 0 0 1-.5-.8l1.5-3c.3-.5.8-.8 1.1-1ZM12 10H4V6h8v4Z"/>
+                  </svg>
+                </div>`,
+          iconSize: [30, 30],
+        });
+        
+        const marker = L.marker([lat, lng], { icon: busIcon });
+        
+        // Create popup content
+        const direction = getHeadingDirection(heading);
+        
+        marker.bindPopup(`
+          <div class="bus-popup">
+            <div class="bus-popup-heading">Bus #${bus.id}</div>
+            <div class="bus-popup-info">
+              <span>Route: ${routeName}</span>
+              <span>Heading: ${direction}</span>
+              <span>Last updated: ${new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+        `);
+        
+        // Add click handler to select the route of this bus
+        marker.on('click', () => {
+          if (route) {
+            selectRoute(route.id);
+          }
+        });
+        
+        marker.addTo(map);
+        busMarkers[bus.id] = marker;
+      }
+    });
+    
+    // Update the status display to show last refresh time
+    const refreshTime = new Date().toLocaleTimeString();
+    
+    // Create or update the refresh status element
+    let refreshStatus = document.querySelector('.refresh-status');
+    if (!refreshStatus) {
+      refreshStatus = document.createElement('div');
+      refreshStatus.className = 'refresh-status';
+      document.querySelector('.map-container').appendChild(refreshStatus);
+    }
+    
+    refreshStatus.style.position = 'absolute';
+    refreshStatus.style.bottom = '10px';
+    refreshStatus.style.right = '10px';
+    refreshStatus.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    refreshStatus.style.padding = '5px 10px';
+    refreshStatus.style.borderRadius = '4px';
+    refreshStatus.style.fontSize = '12px';
+    refreshStatus.style.zIndex = '1000';
+    refreshStatus.innerHTML = `<strong>${buses.length} buses active</strong> • Updated: ${refreshTime}`;
+  }],
           });
           
           const marker = L.marker([lat, lng], { icon: busIcon });
@@ -732,7 +2678,8 @@
               <div class="bus-popup-heading">Bus #${bus.id}</div>
               <div class="bus-popup-info">
                 <span>Route: ${routeName}</span>
-                <span>Heading: ${getHeadingDirection(heading)}°</span>
+                <span>Heading: ${getHeadingDirection(heading)}</span>
+                <span>Last updated: ${new Date().toLocaleTimeString()}</span>
               </div>
             </div>
           `);
@@ -741,121 +2688,272 @@
           busMarkers[bus.id] = marker;
         }
       });
+      
+      // Update the status display to show last refresh time
+      const refreshStatus = document.createElement('div');
+      refreshStatus.className = 'refresh-status';
+      refreshStatus.style.position = 'absolute';
+      refreshStatus.style.bottom = '10px';
+      refreshStatus.style.right = '10px';
+      refreshStatus.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+      refreshStatus.style.padding = '5px 10px';
+      refreshStatus.style.borderRadius = '4px';
+      refreshStatus.style.fontSize = '12px';
+      refreshStatus.innerHTML = `Last updated: ${new Date().toLocaleTimeString()}`;
+      
+      // Replace existing status or add new one
+      const existingStatus = document.querySelector('.refresh-status');
+      if (existingStatus) {
+        existingStatus.remove();
+      }
+      document.querySelector('.map-container').appendChild(refreshStatus);
     }
 
-    // Select a route and update the UI
-    function selectRoute(routeId) {
-      selectedRoute = routeId;
-      selectedStop = null;
-      
-      // Update route list UI
-      const routeItems = document.querySelectorAll('.route-item');
-      routeItems.forEach(item => {
-        item.classList.toggle('active', item.dataset.id === routeId);
-      });
-      
-      // Update stop list UI
-      const stopItems = document.querySelectorAll('.stop-item');
-      stopItems.forEach(item => {
-        item.classList.remove('active');
-      });
-      
-      // Find the selected route
-      const route = routes.find(r => r.id === routeId);
-      
-      if (route) {
-        // Get stops for this route
-        const routeStops = route.stops.map(stopId => {
-          return stops.find(s => s.id === stopId);
-        }).filter(stop => stop !== undefined);
-        
-        // Center map on route
-        if (routeStops.length > 0) {
-          const bounds = routeStops.map(stop => [
-            parseFloat(stop.latitude),
-            parseFloat(stop.longitude)
-          ]);
-          
-          map.fitBounds(bounds);
+  // Select a route and update the UI
+  function selectRoute(routeId) {
+    selectedRoute = routeId;
+    selectedStop = null;
+    
+    console.log(`Selecting route: ${routeId}`);
+    
+    // Update route list UI
+    const routeItems = document.querySelectorAll('.route-item');
+    routeItems.forEach(item => {
+      item.classList.toggle('active', item.dataset.id === routeId);
+    });
+    
+    // Update stop list UI
+    const stopItems = document.querySelectorAll('.stop-item');
+    stopItems.forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Find the selected route
+    const route = routes.find(r => r.id === routeId);
+    
+    if (route) {
+      // Highlight route polyline if it exists
+      Object.entries(routePolylines).forEach(([id, polyline]) => {
+        if (id === routeId) {
+          polyline.setStyle({
+            weight: 5,
+            opacity: 1
+          });
+        } else {
+          polyline.setStyle({
+            weight: 3,
+            opacity: 0.4
+          });
         }
+      });
+      
+      // Get stops for this route
+      const routeStops = route.stops
+        .map(stopId => stops.find(s => s.id === stopId))
+        .filter(stop => stop !== undefined);
+      
+      // Center map on route
+      if (routeStops.length > 0) {
+        const bounds = routeStops.map(stop => [
+          parseFloat(stop.latitude),
+          parseFloat(stop.longitude)
+        ]);
+        
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+      
+      // Highlight stops for this route
+      if (window.stopLayerGroup) {
+        window.stopLayerGroup.eachLayer(layer => {
+          // Reset all stop markers
+          layer.setStyle({
+            radius: 5,
+            fillColor: '#a13c2e',
+            color: '#ffffff',
+            weight: 2,
+            opacity: 0.5,
+            fillOpacity: 0.5
+          });
+          
+          // Highlight stops on this route
+          const stopId = Object.keys(stopMarkers).find(key => stopMarkers[key] === layer);
+          if (stopId && route.stops.includes(stopId)) {
+            layer.setStyle({
+              radius: 7,
+              fillColor: route.color || '#a13c2e',
+              color: '#ffffff',
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 1
+            });
+          }
+        });
       }
     }
+  }
 
-    // Select a stop and show its details
-    function selectStop(stopId) {
-      selectedStop = stopId;
-      selectedRoute = null;
-      
-      // Update stop list UI
-      const stopItems = document.querySelectorAll('.stop-item');
-      stopItems.forEach(item => {
-        item.classList.toggle('active', item.dataset.id === stopId);
+  // Select a stop and show its details
+  async function selectStop(stopId) {
+    selectedStop = stopId;
+    selectedRoute = null;
+    
+    console.log(`Selecting stop: ${stopId}`);
+    
+    // Update stop list UI
+    const stopItems = document.querySelectorAll('.stop-item');
+    stopItems.forEach(item => {
+      item.classList.toggle('active', item.dataset.id === stopId);
+    });
+    
+    // Update route list UI
+    const routeItems = document.querySelectorAll('.route-item');
+    routeItems.forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Restore route polyline styles
+    Object.values(routePolylines).forEach(polyline => {
+      polyline.setStyle({
+        weight: 3,
+        opacity: 0.7
       });
+    });
+    
+    // Find the selected stop
+    const stop = stops.find(s => s.id === stopId);
+    
+    if (stop) {
+      // Center map on stop
+      const lat = parseFloat(stop.latitude);
+      const lng = parseFloat(stop.longitude);
       
-      // Update route list UI
-      const routeItems = document.querySelectorAll('.route-item');
-      routeItems.forEach(item => {
-        item.classList.remove('active');
-      });
-      
-      // Find the selected stop
-      const stop = stops.find(s => s.id === stopId);
-      
-      if (stop) {
-        // Center map on stop
-        const lat = parseFloat(stop.latitude);
-        const lng = parseFloat(stop.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        map.setView([lat, lng], 17);
         
-        if (!isNaN(lat) && !isNaN(lng)) {
-          map.setView([lat, lng], 17);
+        // Highlight the stop marker
+        if (window.stopLayerGroup) {
+          window.stopLayerGroup.eachLayer(layer => {
+            // Reset all stop markers
+            layer.setStyle({
+              radius: 5,
+              fillColor: '#a13c2e',
+              color: '#ffffff',
+              weight: 2,
+              opacity: 0.5,
+              fillOpacity: 0.5
+            });
+          });
           
-          // Create or update stop marker
-          if (window.stopMarker) {
-            window.stopMarker.remove();
+          // Highlight the selected stop
+          const marker = stopMarkers[stopId];
+          if (marker) {
+            marker.setStyle({
+              radius: 8,
+              fillColor: '#a13c2e',
+              color: '#ffffff',
+              weight: 3,
+              opacity: 1,
+              fillOpacity: 1
+            });
           }
-          
-          window.stopMarker = L.marker([lat, lng]).addTo(map);
-          
-          // Load arrivals for this stop
-          loadArrivals(stopId).then(arrivals => {
-            // Create popup content
-            let popupContent = `
+        }
+        
+        // Create or update stop marker popup
+        try {
+          // Show loading indicator in popup
+          if (stopMarkers[stopId]) {
+            stopMarkers[stopId].bindPopup(`
               <div class="stop-details">
                 <div class="stop-name">${stop.human_name}</div>
                 <div>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}</div>
-                
-                <div class="stop-arrivals">
-                  ${arrivals.length > 0 ? 
-                    arrivals.map(arrival => {
-                      const route = routes.find(r => r.id === arrival.route_id);
-                      const routeName = route ? route.name : `Route ${arrival.route_id}`;
-                      const nextTime = Math.round(parseFloat(arrival.next) / 60);
-                      const secondTime = Math.round(parseFloat(arrival.second) / 60);
-                      
-                      return `
-                        <div class="arrival-item">
-                          <div class="route-name">
-                            <span class="route-color" style="background-color: ${route ? route.color : '#00274c'}"></span>
-                            ${routeName}
-                          </div>
-                          <div class="arrival-times">
-                            <div class="time-chip">${nextTime} min</div>
-                            <div class="time-chip">${secondTime} min</div>
-                          </div>
-                        </div>
-                      `;
-                    }).join('') 
-                    : '<div>No arrivals scheduled</div>'
-                  }
+                <div class="loading-container" style="margin-top: 10px;">
+                  <div class="spinner"></div>
+                  <span>Loading arrivals...</span>
                 </div>
               </div>
-            `;
+            `).openPopup();
+          }
+          
+          // Load arrivals for this stop
+          const arrivals = await loadArrivals(stopId);
+          
+          // Create popup content
+          let popupContent = `
+            <div class="stop-details">
+              <div class="stop-name">${stop.human_name}</div>
+              <div>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}</div>
+          `;
+          
+          // Add arrivals section
+          popupContent += `<div class="stop-arrivals">`;
+          
+          if (arrivals.length > 0) {
+            // Group arrivals by route
+            const routeArrivals = {};
+            arrivals.forEach(arrival => {
+              if (!routeArrivals[arrival.route_id]) {
+                routeArrivals[arrival.route_id] = [];
+              }
+              routeArrivals[arrival.route_id].push(arrival);
+            });
             
-            window.stopMarker.bindPopup(popupContent, { maxWidth: 300 }).openPopup();
-          });
+            // Add arrival info for each route
+            Object.entries(routeArrivals).forEach(([routeId, routeArrivals]) => {
+              const route = routes.find(r => r.id === routeId);
+              const routeName = route ? route.name : `Route ${routeId}`;
+              const routeColor = route ? route.color : '#465436';
+              
+              popupContent += `
+                <div class="arrival-item">
+                  <div class="route-name">
+                    <span class="route-color" style="background-color: ${routeColor}"></span>
+                    ${routeName}
+                  </div>
+                  <div class="arrival-times">
+              `;
+              
+              // Sort arrivals by time
+              routeArrivals.sort((a, b) => parseFloat(a.next) - parseFloat(b.next));
+              
+              // Add next arrival times (convert to minutes)
+              routeArrivals.slice(0, 2).forEach(arrival => {
+                const minutes = Math.round(parseFloat(arrival.next) / 60);
+                popupContent += `<div class="time-chip">${minutes} min</div>`;
+              });
+              
+              popupContent += `
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            popupContent += `<div>No arrivals scheduled</div>`;
+          }
+          
+          popupContent += `
+              </div>
+            </div>
+          `;
+          
+          // Update popup with arrivals
+          if (stopMarkers[stopId]) {
+            stopMarkers[stopId].bindPopup(popupContent, { maxWidth: 300 }).openPopup();
+          }
+        } catch (error) {
+          console.error('Error loading arrivals:', error);
+          if (stopMarkers[stopId]) {
+            stopMarkers[stopId].bindPopup(`
+              <div class="stop-details">
+                <div class="stop-name">${stop.human_name}</div>
+                <div>${stop.additional_name !== 'None' ? stop.additional_name : stop.unique_name}</div>
+                <div style="color: red; margin-top: 10px;">Error loading arrivals</div>
+              </div>
+            `, { maxWidth: 300 }).openPopup();
+          }
         }
       }
     }
+  }
 
     // Filter routes based on search term
     function filterRoutes(searchTerm) {
@@ -886,43 +2984,49 @@
       return directions[index];
     }
 
-    // Show loading indicator
-    function showLoading(containerId) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = `
-        <div class="loading">
-          <div class="spinner"></div>
-          <span>Loading...</span>
-        </div>
+  // Show error message
+  function showError(message) {
+    const container = document.getElementById('error-container');
+    
+    // Create error element if it doesn't exist
+    if (!container.querySelector('.error-message')) {
+      const errorEl = document.createElement('div');
+      errorEl.className = 'error-message';
+      errorEl.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+        </svg>
+        <span>${message}</span>
       `;
-    }
-
-    // Hide loading indicator
-    function hideLoading(containerId) {
-      const container = document.getElementById(containerId);
-      if (container.querySelector('.loading')) {
-        container.querySelector('.loading').remove();
-      }
-    }
-
-    // Show error message
-    function showError(message) {
-      const container = document.getElementById('error-container');
       
-      // Create error element if it doesn't exist
-      if (!container.querySelector('.error-message')) {
-        const errorEl = document.createElement('div');
-        errorEl.className = 'error-message';
-        errorEl.textContent = message;
-        
-        container.appendChild(errorEl);
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-          errorEl.remove();
-        }, 5000);
-      }
+      container.appendChild(errorEl);
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        errorEl.remove();
+      }, 5000);
     }
+  }
+
+  // Show loading indicator
+  function showLoading(containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = `
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <span>Loading...</span>
+      </div>
+    `;
+  }
+
+  // Hide loading indicator
+  function hideLoading(containerId) {
+    const container = document.getElementById(containerId);
+    const loading = container.querySelector('.loading-container');
+    if (loading) {
+      loading.remove();
+    }
+  }
   </script>
 </body>
 </html>
